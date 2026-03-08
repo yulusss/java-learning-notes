@@ -1,0 +1,156 @@
+package com.yulus.dynamicArrays;
+
+/*
+ @author 云禄
+ @version 1.0 
+*/
+
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.function.Consumer;
+import java.util.stream.IntStream;
+
+public class DynamicArrays implements Iterable<Integer>{//Iterable迭代器
+    private int size = 0;//逻辑大小，控制数组内有效元素个数
+    private int capacity = 8;//容量
+    private int[] array = {};//占用空间更少，如果创建了对象就拥有了容量，不使用的情况下，会占用更多内存
+
+
+    //元素添加到指定位置
+//    public void addStudy(int index /* 插入的索引位置 */, int element) {
+//        if (index >= 0 && index < size) {
+//            //第一个元素：源数组
+//            //第二个元素：原数组拷贝起始点
+//            //第三个元素：目标数组
+//            //第四个元素：目标数组粘贴起点
+//            //第五个元素：拷贝元素个数
+//            System.arraycopy(array, index, array, index + 1, size - index);
+//            array[index] = element;
+//            size++;
+//        } else if (index == size) {//说明插入的位置时最后一个位置
+//            array[size] = element;//直接插入即可
+//            size++;
+//        }
+//    }
+
+    //简化后
+    public void add(int index /* 插入的索引位置 */, int element) {
+        //判断 index 是否合理
+        if(index < 0 || index > size){
+            throw new ArrayIndexOutOfBoundsException("索引越界");
+        }
+
+        checkAndGrow();//检查元素是否需要扩容
+
+        //如果索引不是最后一个，将原数组 index 之后的值向后移动一位，为新元素空出位置添加
+        if (index >= 0 && index < size) {
+            System.arraycopy(array, index, array, index + 1, size - index);
+//            array[index] = element;
+//            size++;
+//        } else if (index == size) {
+//            array[size] = element;
+//            size++;
+        }
+        array[index] = element;
+        size++;
+    }
+
+    //添加元素到最后一个位置
+    public void addLast(int element){
+        checkAndGrow();//检查元素是否需要扩容
+        add(size , element);
+    }
+
+
+    //返回索引处的值
+    public int get(int index){
+        //判断 index 是否合理
+        if(index < 0 || index > size - 1){
+            throw new ArrayIndexOutOfBoundsException("索引越界");
+        }
+        return array[index];
+    }
+
+    //数组遍历
+    //方式1:使用Consumer接口
+    public void myForEach(Consumer<Integer> consumer){
+        for (int i = 0; i < size; i++) {
+            consumer.accept(array[i]);
+        }
+    }
+    /*
+    外部调用:
+    dynamicArrays.myForEach((element) -> {
+            //可以加一些业务代码，比如每个元素都加1
+            System.out.println(element);
+        });
+     */
+
+
+
+    //方式2:使用Iterable迭代器
+    @Override
+    public Iterator<Integer> iterator() {
+        return new Iterator<Integer>() {
+            int i = 0;//设置初始指针
+            @Override
+            public boolean hasNext() {//有没有下一个元素
+                return i < size;//当 i < size 时下一个有元素，返回 true , 反之返回 false
+            }
+
+            @Override
+            public Integer next() {//返回当前元素,并指向下一个元素
+                return array[i++];//i++ 先返回在自增，使其指向下一个元素
+            }
+        };
+        /*
+        外部调用：
+        for (Integer dynamicArray : dynamicArrays) {
+            System.out.println(dynamicArray);
+        }
+         */
+    }
+
+    //方式3:流遍历
+    public IntStream stream(){
+        return IntStream.of(Arrays.copyOfRange(array , 0 , size));
+    }
+
+    /*
+    外部调用:
+    dynamicArrays.stream().forEach((element) -> {
+            System.out.println(element);
+        });
+     */
+
+
+    public int remove(int index){//返回被删除的元素
+        //判断 index 是否合理
+        if(index < 0 || index > size - 1){
+            throw new ArrayIndexOutOfBoundsException("索引越界");
+        }
+
+        int removed = array[index];//先取出被删除的元素
+
+        if(index < size - 1) {//如果 index = size - 1 说明删除最后一个元素，就没有必要拷贝数组
+            System.arraycopy(array, index + 1, array, index, size - index - 1);
+        }
+        size--;
+
+        return removed;
+
+    }
+
+    //容量检查并扩容
+    public void checkAndGrow(){
+        //懒加载
+        if(size == 0){
+            array = new int[capacity];
+        }else if(size == capacity) {
+            capacity += capacity >> 1;
+            int[] newArray = new int[capacity];
+            System.arraycopy(array, 0, newArray, 0, size);
+            array = newArray;
+        }
+    }
+}
