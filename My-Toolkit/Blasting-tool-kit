@@ -1,0 +1,121 @@
+package com.yulus.utility.blasting;
+
+/*
+ @author 云禄
+ @version 1.0 
+*/
+
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+
+public class BlastingUtility {
+
+    //获取私有属性
+    public static Object getPrivateField(Object object , String fieldName) throws NoSuchFieldException, IllegalAccessException {
+        Field declaredField = findField(object.getClass() , fieldName);
+        boolean accessible = declaredField.canAccess(object);
+        try {
+            if (!accessible) {
+                declaredField.setAccessible(true);
+            }
+            return declaredField.get(object);
+        }finally {
+            declaredField.setAccessible(accessible);
+        }
+    }
+
+    //获取私有属性（泛型转换）
+    public static <T> T getPrivateFieldValue(Object object , String fieldName , Class<T> type) throws NoSuchFieldException, IllegalAccessException {
+        Object privateField = getPrivateField(object, fieldName);
+        return type.cast(privateField);
+    }
+
+    //设置私有属性的值
+    public static void setPrivateField(Object object , String fieldName , Object value) throws NoSuchFieldException, IllegalAccessException {
+        Field declaredField = findField(object.getClass() , fieldName);
+        boolean accessible = declaredField.canAccess(object);
+        try{
+            if(!accessible){
+                declaredField.setAccessible(true);
+            }
+            declaredField.set(object , value);
+        }finally {
+            declaredField.setAccessible(accessible);
+        }
+    }
+
+    //递归爆破查找私有属性，包括父类
+    public static Field findField(Class<?> clazz , String fieldName) throws NoSuchFieldException {
+        try{
+            return clazz.getDeclaredField(fieldName);
+        } catch (NoSuchFieldException e) {
+            Class<?> superclass = clazz.getSuperclass();
+            if(superclass != null && superclass != Object.class){
+                return findField(superclass , fieldName);
+            }
+            throw e;
+        }
+    }
+
+
+
+
+    //递归爆破查找私有方法，包括父类
+    public static Method findMethod(Class<?> clazz , String methodName , Class<?>... paramType) throws NoSuchMethodException {
+        try{
+            return clazz.getDeclaredMethod(methodName , paramType);
+        } catch (NoSuchMethodException e) {
+            Class<?> superclass = clazz.getSuperclass();
+            if(superclass != null && superclass != Object.class){
+                return findMethod(superclass , methodName , paramType);
+            }
+            throw e;
+        }
+    }
+
+    //公开方法：查找并自动调用方法
+    public static Object invokePrivateMethod(Object object , String methodName , Object... args) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+        Class<?>[] paramTypes = getParaTypes(args);
+        Method method = findMethod(object.getClass() , methodName , paramTypes);
+        return invokeMethod(object , method , args);
+
+    }
+
+    //调用私有 void 方法
+    public static void invokePrivateVoidMethod(Object object , String methodName , Object... args) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+        Class<?>[] paramTypes = getParaTypes(args);
+        Method method = findMethod(object.getClass(), methodName, paramTypes);
+        boolean accessible = method.canAccess(object);
+        try{
+            if(!accessible){
+                method.setAccessible(true);
+            }
+            method.invoke(object , args);
+        }finally {
+            method.setAccessible(accessible);
+        }
+    }
+
+    //辅助方法：值->类型
+    private static Class<?>[] getParaTypes(Object... args){
+        Class<?>[] paraTypes = new Class[args.length];
+        for (int i = 0; i < args.length; i++) {
+            paraTypes[i] = args[i].getClass();
+        }
+        return paraTypes;
+    }
+
+    //辅助方法：爆破调用
+    private static Object invokeMethod(Object object , Method method , Object... args) throws InvocationTargetException, IllegalAccessException {
+        boolean accessible = method.canAccess(object);
+        try {
+            if (!accessible) {
+                method.setAccessible(true);
+            }
+            return method.invoke(object, args);
+        }finally {
+            method.setAccessible(accessible);
+        }
+    }
+}
