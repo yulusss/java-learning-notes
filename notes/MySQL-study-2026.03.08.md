@@ -235,3 +235,59 @@ SELECT name, phone FROM manager;
 - **连接条件**：明确表间关系，避免笛卡尔积。
 - **ON vs WHERE**：理解执行顺序，合理放置条件。
 - **性能**：索引是关键，避免过度连接。
+
+```sql
+SELECT ename , sal , dname , e.deptno 
+FROM emp e 
+JOIN dept d 
+ON e.deptno = d.deptno 
+ORDER BY e.deptno , e.sal;
+
+SELECT dname , ename , sal , emp.deptno 
+FROM emp , dept 
+WHERE emp.deptno = dept.deptno 
+AND dept.deptno = 10;
+
+SELECT * FROM salgrade;
+
+SELECT ename , sal , grade 
+FROM emp , salgrade 
+WHERE sal BETWEEN losal AND hisal
+ORDER BY grade;
+
+
+SELECT worker.ename AS worker_name ,
+ worker.sal AS worker_sal , 
+ manager.ename AS manager_name , 
+ manager.sal AS manager_sal 
+		FROM emp worker 
+		JOIN emp manager
+		ON worker.mgr = manager.empno
+		ORDER BY worker_sal , manager_sal;
+
+SELECT * FROM emp WHERE deptno = 
+(SELECT deptno 
+FROM emp 
+WHERE ename = 'SMITH');
+
+SELECT DISTINCT job 
+		FROM emp 
+		WHERE deptno = 10;
+		
+SELECT ename , job , sal , deptno  
+		FROM emp 	
+		WHERE job IN 
+		(SELECT DISTINCT job 
+		FROM emp 
+		WHERE deptno = 10) AND deptno != 10;
+
+SELECT * 
+		FROM emp e1
+		WHERE e1.sal > (SELECT AVG(e2.sal) FROM emp e2 WHERE e2.deptno = e1.deptno
+		) ORDER BY deptno;
+
+
+SELECT e.* FROM emp e JOIN (
+		SELECT deptno , MAX(sal) AS max_sal FROM emp GROUP BY deptno ) t 
+		ON t.deptno = e.deptno AND e.sal = t.max_sal;
+```
