@@ -1,0 +1,250 @@
+package com.yulus.SinglyLinkedList;
+
+/*
+ @author 云禄
+ @version 1.0 
+*/
+
+import java.util.Iterator;
+import java.util.function.Consumer;
+
+//链表类
+//单向链表
+public class SinglyLinkedList implements Iterable<Integer>{//整体
+    private Node head = null;//头指针，“ =null ”使其指向 null
+
+
+    //增加节点到第一个位置
+    public void addFirst(int value){
+        //1. 链表为空的情况
+//        head = new Node(value, null);
+        // 传入值给head ， 使 head 指向 新节点
+        // 链表为空使其指向 null ， 即成为最后一个节点
+
+        //2. 链表非空的情况
+        //使新元素指向原来最后一个元素，head 指向新节点
+        head = new Node(value , head /*指向 head 是因为原 head 指向的就是旧节点 ， 使其与 head 指向一样就是指向旧节点*/);
+        //让 head 指向新节点
+
+        //实际上只需要保留第二个代码，因为第二个代码已经包括了第一个代码
+        //原 head 指向就是 null ， 所以第二种涵盖了第一种链表非空的情况
+    }
+
+
+    //辅助方法，使其找到最后一个节点，返回一个 Node 对象
+    private Node findLast(){
+        //空链表情况
+        if(head == null){
+            return null;
+        }
+
+        //非空链表情况
+        Node pointer = head;
+        while(pointer.next != null){//当检测到 pointer 下一个指向时 null 时 ， 就说明是最后一个节点了
+            pointer = pointer.next;
+        }
+        return pointer;
+    }
+
+    //尾部添加节点
+    public void addLast(int value){
+        //先找到最后一个节点
+        Node last = findLast();
+
+        //空链表情况，空链表时 findLast 方法返回一个 null
+        if(last == null){
+            //空链表时使用 addFirst 方法，效果一样
+            addFirst(value);
+            return;
+        }
+
+        //非空链表情况
+        //让最后一个节点的指针指向新节点
+        last.next = new Node(value , null);
+
+    }
+
+
+
+    //辅助方法
+    //根据给定索引位置，返回该位置的值
+    private Node findNode(int index){
+        int i = 0;//定义移动索引
+        for(Node p = head ; p != null ; p = p.next , i++){
+            if(i == index){
+                //如果移动索引等于输入的索引位置，说明找到了，返回该索引处的 Node 对象
+                return p;
+            }
+        }
+        //循环后仍旧没找到，说明 index 太大了
+        return null;
+    }
+
+    //根据所给的索引位置，返回节点值
+    public int get(int index){
+        Node node = findNode(index);
+        //如果返回 null，说明没找到，索引不合法，抛出异常
+        if(node == null){
+            throw new IllegalArgumentException(String.format("index [%d] 不合法%n" , index));
+        }
+        //找到了就返回该节点的值
+        return node.value;
+    }
+
+
+    //向索引位置插入新节点
+    //首先让 前一个给定索引节点(即目标插入位置的上一个节点) 指向 新节点 ， 然后让新节点指向 后一个给定的索引节点
+    public void insert(int index , int value){
+
+        //向第一个节点插入时
+        if(index == 0){
+            addFirst(value);
+            return;
+        }
+
+        Node pref = findNode(index - 1);//找到上一个节点
+
+        if(pref == null){//没找到的情况
+            throw new IllegalArgumentException(String.format("index [%d] 不合法%n" , index));
+        }
+
+        pref.next = new Node(value, pref.next);//创建新节点，新节点的指向就是 pref.next 的指向
+        //因为 pref 时目标插入索引的上一个节点位置，指向的就是该索引处的原节点
+        //最后让 pref.next 指向新节点，完成插入
+
+    }
+
+
+
+    //删除第一个节点
+    public void removeFirst(){
+        //当空链表时，不能删除，抛出异常
+        if(head == null){
+            throw new IllegalArgumentException("链表为空!");
+        }
+
+        //让 head 指向原来的 head.next ，则 head 的原指向就空掉了，就会被java底层垃圾处理机制处理掉
+        head = head.next;
+        //这里的 head 并不是第一个节点，而是指向第一个节点，而 head.next 是指向第二个节点
+        //这一行代码主要是让 head 的原指向，去指向 head.next 的指向
+        //此时 head 的原指向（即第一个节点）没有被指向，就会被java底层垃圾处理机制处理掉
+    }
+
+
+    //删除指定索引处的节点
+    public void removeSpecified(int index){
+        if(index == 0){
+            removeFirst();
+            return;
+        }
+
+        //先找到上一个节点
+        Node pref = findNode(index - 1);
+
+        //说明输入的索引与该链表脱节了，不合法
+        if(pref == null){
+            throw new IllegalArgumentException(String.format("index [%d] 不合法%n" , index));
+        }
+
+        //说明该索引处没有节点，删除不了
+        if(pref.next == null){
+            throw new IllegalArgumentException(String.format("index [%d] 不合法%n" , index));
+        }
+
+        //让上一个节点的next 指向 该节点的 next (即pref.next.next)
+        pref.next = pref.next.next;
+        /*
+        拆解:
+        Node removed = pref.next;
+        pref.next = removed.next;
+         */
+        //pref.next 指向的是原节点
+        //使其指向 原节点的 next (即原节点的下一个节点)
+        //此时原节点没有被任何节点所指向，只指向下一个节点
+        //与 removeFirst() 一样会被java底层垃圾处理机制处理掉
+    }
+
+
+
+
+    //遍历链表1:
+    //使用 While 循环
+    //使用 Consumer 接收一个参数
+    //让遍历逻辑和业务逻辑分离，代码更灵活、更好复用
+    public void loopWhile(Consumer<Integer> consumer ){
+
+        Node pointer = head;//定义一个移动指针遍历链表
+
+        //当 pointer 指向 null 时停止遍历
+        while(pointer != null){
+
+            //输出 移动指针指向的值
+            consumer.accept(pointer.value);
+
+            //使 pointer 指向下一个节点
+            pointer = pointer.next;
+        }
+
+        /*
+
+        调用方法:
+        singlyLinkedList.loopWhile(value -> {
+            System.out.println(value);
+        });
+
+         */
+    }
+
+    //遍历链表2：
+    //使用 for 循环
+    public void loopFor(Consumer<Integer> consumer){
+        //初始移动指针指向 head ， 当 pointer 指向 null 时停止 ， 循环操作使 pointer 指向下一个节点
+        for(Node pointer = head ; pointer != null ; pointer = pointer.next){
+            consumer.accept(pointer.value);
+        }
+    }
+
+    //遍历链表3:
+    //使用 Iterable 接口
+
+
+    @Override
+    public Iterator<Integer> iterator() {
+
+        //匿名内部类
+        return new Iterator<Integer>() {
+            Node pointer = head;//创建一个移动指针
+            @Override
+            public boolean hasNext() {//询问是否有下一个元素
+                return pointer != null;
+            }
+
+            @Override
+            public Integer next() {//返回当前元素的值，并且指向下一个元素
+                int value = pointer.value;//临时存储，直接返回 pointer.value 不能指向下一个元素
+                pointer = pointer.next;//指向下一个元素
+                return value;//返回当前节点元素
+            }
+        };
+        /*
+        调用方法:
+        即增强 for 循环
+        for (Integer i : singlyLinkedList) {
+            System.out.println(i);
+        }
+         */
+    }
+
+
+    //节点类
+    //内部类，对外只显示一个类 SinglyLinkedList
+    private static class Node {
+        int value;//代表值
+        Node next;//指向下一个的指针
+
+        public Node(int value, Node next) {
+            this.value = value;
+            this.next = next;
+        }
+    }
+}
