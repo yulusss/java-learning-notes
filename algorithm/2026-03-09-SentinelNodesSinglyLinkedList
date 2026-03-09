@@ -1,0 +1,153 @@
+package com.yulus.SinglyLinkedList;
+
+/*
+ @author 云禄
+ @version 1.0 
+*/
+
+import java.util.Iterator;
+import java.util.function.Consumer;
+
+public class SentinelNodesSinglyLinkedList implements Iterable<Integer> {
+    //让头指针指向哨兵节点
+    //哨兵节点的值无所谓，对链表没有影响
+    //此时不需要再做空链表的处理
+    private Node head = new Node(0 , null);
+
+
+    public void addFirst(int value) {
+//        head = new Node(value, head);
+        //这里需要让 哨兵节点 指向 新节点
+        Node newNode = new Node(value, head.next);
+        head.next = newNode;
+    }
+
+    private Node findLast() {
+        //这里 head 永远指向哨兵节点
+//        if (head == null) {
+//            return null;
+//        }
+        Node pointer = head;
+        //如果没有节点，那么指向的就是哨兵节点
+        while (pointer.next != null) {
+            pointer = pointer.next;
+        }
+        return pointer;
+    }
+
+    public void addLast(int value) {
+        Node last = findLast();
+        //加入哨兵节点后不可能出现最后一个值为空的情况
+//        if (last == null) {
+//            addFirst(value);
+//            return;
+//        }
+        last.next = new Node(value, null);
+    }
+
+    private Node findNode(int index) {
+        int i = 0;
+        for (Node p = head; p != null; p = p.next, i++) {
+            if (i == index) {
+                return p;
+            }
+        }
+        return null;
+    }
+
+    public int get(int index) {
+        //不允许获得哨兵的值
+        if (index < 1) {
+            throw new IllegalArgumentException("索引从1开始");
+        }
+        Node node = findNode(index);
+        if (node == null) {
+            throw new IllegalArgumentException(String.format("index [%d] 不合法%n", index));
+        }
+        return node.value;
+    }
+
+    public void insert(int index, int value) {
+//        if (index == 0) {
+//            addFirst(value);
+//            return;
+//        }
+        Node pref = findNode(index - 1);
+        if (pref == null) {
+            throw new IllegalArgumentException(String.format("index [%d] 不合法%n", index));
+        }
+        pref.next = new Node(value, pref.next);
+    }
+
+    public void removeFirst() {
+//        if (head == null) {
+//            throw new IllegalArgumentException("链表为空!");
+//        }
+        //这里需要设置为哨兵节点的指向判断
+        if (head.next == null) {
+            throw new IllegalArgumentException("链表为空!");
+        }
+//        head = head.next;
+        head.next = head.next.next;
+    }
+
+    public void removeSpecified(int index) {
+//        if (index == 0) {
+//            removeFirst();
+//            return;
+//        }
+        Node pref = findNode(index - 1);
+        if (pref == null) {
+            throw new IllegalArgumentException(String.format("index [%d] 不合法%n", index));
+        }
+        if (pref.next == null) {
+            throw new IllegalArgumentException(String.format("index [%d] 不合法%n", index));
+        }
+        pref.next = pref.next.next;
+    }
+
+    public void loopWhile(Consumer<Integer> consumer) {
+//        Node pointer = head;
+        //这里应该从 哨兵节点开始遍历
+        //后面所有遍历同理
+        Node pointer = head.next;
+        while (pointer != null) {
+            consumer.accept(pointer.value);
+            pointer = pointer.next;
+        }
+    }
+
+    public void loopFor(Consumer<Integer> consumer) {
+        for (Node pointer = head.next; pointer != null; pointer = pointer.next) {
+            consumer.accept(pointer.value);
+        }
+    }
+
+    @Override
+    public Iterator<Integer> iterator() {
+        //匿名内部类
+        return new Iterator<Integer>() {
+            Node pointer = head.next;
+            @Override
+            public boolean hasNext() {
+                return pointer != null;
+            }
+            @Override
+            public Integer next() {
+                int value = pointer.value;
+                pointer = pointer.next;
+                return value;
+            }
+        };
+    }
+
+    private static class Node {
+        int value;
+        Node next;
+
+        public Node(int value, Node next) {
+            this.value = value;
+            this.next = next;
+        }
+    }
+}
