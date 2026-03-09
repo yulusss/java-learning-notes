@@ -1,0 +1,35 @@
+给你单链表的头节点 `head` ，请你反转链表，并返回反转后的链表。
+**示例 1：**
+```
+输入：head = [1,2,3,4,5]
+输出：[5,4,3,2,1]
+```
+**示例 2：**
+```
+输入：head = [1,2]
+输出：[2,1]
+```
+```
+class Solution {
+    public ListNode reverseList(ListNode head) {
+      //主要要将原指向反转，即 1 指 null ， 2 指 1 ...
+        ListNode prev = null;//前指针--第一个指针
+      //指向null ，后面要让 第一个元素指向 null
+      
+        ListNode curr = head;//当前指针--第二个指针
+      //指向上一个元素，方便反转
+      
+        while(curr != null){
+            ListNode next = curr.next;//临时指针，等指向反转后，将其指向赋给 curr
+          
+            curr.next = prev; //使 本节点 指向 上一个节点
+            prev = curr; // 前指针后移到当前指针位置
+            curr = next; // 当前指针位置移动到临时指针的位置，即指向下一个节点
+        }
+        return prev;//返回前指针，也就是当前链表的头节点
+      //反转后，head 不再是头节点
+      //而 curr 最后指向的是 null。
+    }
+}
+```
+
