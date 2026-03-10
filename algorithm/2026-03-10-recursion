@@ -1,0 +1,156 @@
+//单向链表递归遍历，无哨兵
+//递归遍历
+    public void loopRecursion(Consumer<Integer> before , Consumer<Integer> after){
+        recursion(head , before , after);
+        /*
+        调用:
+        singlyLinkedList.loopRecursion(value -> {
+            System.out.println("before: " + value);
+        } , value -> {
+            System.out.println("after: " + value);
+        });
+         */
+    }
+
+    //递归类
+    //某个节点要进行的操作
+    private void recursion(Node curr/* 当前要处理的节点*/ , Consumer<Integer> before , Consumer<Integer> after){
+        //等于 null 时结束递归
+        if(curr == null){
+            return;
+        }
+
+        before.accept(curr.value);//正序
+        recursion(curr.next , before , after);
+        after.accept(curr.value);//倒序
+    }
+
+    //反向打印字符串
+    public class ReversePrintString {
+
+    public static void reverseString(String str) {
+        reverseString(0, str);  // 内部调用带索引的版本
+    }
+
+    private static void reverseString(int n , String str){
+        if(n == str.length()){
+            return;
+        }
+        reverseString(n + 1 , str);
+        System.out.println(str.charAt(n));
+        /*
+        时间轴 →
+        --------------------------------------------------------------------------------
+        递归调用栈：
+
+        reverseString(0, "yulus")
+            ├─ 等待打印
+            │   reverseString(1, "yulus")
+            │       ├─ 等待打印
+            │       │   reverseString(2, "yulus")
+            │       │       ├─ 等待打印
+            │       │       │   reverseString(3, "yulus")
+            │       │       │       ├─ 等待打印
+            │       │       │       │   reverseString(4, "yulus")
+            │       │       │       │       ├─ 等待打印
+            │       │       │       │       │   reverseString(5, "yulus")
+            │       │       │       │       │       └─ 触发终止，返回
+            │       │       │       │       └─ 打印 's'
+            │       │       │       └─ 打印 'u'
+            │       │       └─ 打印 'l'
+            │       └─ 打印 'u'
+            └─ 打印 'y'
+
+        最终输出：s u l u y（每行一个字符）
+         */
+    }
+}
+
+//二分查找
+public class BinarySearch {
+
+    public static void search(int[] a , int target){
+        int f = f(a, target, 0, a.length - 1);
+        if(f == -1){
+            System.out.println("目标值 " + target + " 不在数组中");
+            return;
+        }
+        System.out.println("目标值  " + target + " 在索引 " + f + " 处");
+    }
+
+    private static int f(int[] a , int target , int i , int j){
+        //i 是左指针 ， j 是右指针
+        int mid = (i + j) >>> 1;//定义中间指针
+
+        if(i > j){
+            return -1;
+        }
+
+        if(target < a[mid]){
+            return f(a , target , i , mid - 1);
+        }else if(a[mid] < target){
+            return f(a , target , mid + 1 , j);
+        }else{
+            return mid;
+        }
+
+    }
+}
+
+//冒泡排序
+public class BubbleSort {
+
+    public static void sort(int[] num){
+        bubble(num , num.length - 1);
+    }
+
+    // j 是未排序右边界
+    private static void bubble(int[] num , int j ){
+
+        // 递归结束条件：没有未排序元素了
+        if(j == 0){
+            return;
+        }
+
+        //x 是标记，每当发生转换时，让 x = i 值，也就是说，x 的值就是 新 的未排序数组 右边界，即替换原来 j - 1 的递归
+        int x = 0;
+
+        //把最大值冒泡到j的位置
+        for (int i = 0; i < j; i++) {
+            //如果前一个比后一个大，就交换
+            if(num[i] > num[i + 1]){
+                int temp = num[i];
+                num[i] = num[i + 1];
+                num[i + 1] = temp;
+                x = i;
+            }
+        }
+        //然后再次调用
+        //此时的 x 值替代 j 的值
+        bubble(num , x);
+        /*
+        sort([5,1,2,3,4])
+            ↓
+        bubble(j=4)  ← 第1轮
+            ├─ i=0: 5>1 交换 x=0
+            ├─ i=1: 5>2 交换 x=1
+            ├─ i=2: 5>3 交换 x=2
+            ├─ i=3: 5>4 交换 x=3
+            └─ 结果: [1,2,3,4,5] 调用 bubble(j=3)
+                ↓
+                bubble(j=3)  ← 第2轮
+                    ├─ i=0: 1>2? 不换 x=0
+                    ├─ i=1: 2>3? 不换 x=0
+                    ├─ i=2: 3>4? 不换 x=0
+                    └─ 结果: [1,2,3,4,5] 调用 bubble(j=0)
+                        ↓
+                        bubble(j=0)  ← 第3轮 
+                            └─ j==0 → 返回
+                        ← 返回
+                    ← 返回
+                ← 返回
+            ← 返回
+        结束
+         */
+    }
+}
