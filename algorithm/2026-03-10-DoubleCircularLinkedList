@@ -1,0 +1,135 @@
+package com.yulus.CircularLinkedList;
+
+/*
+ @author 云禄
+ @version 1.0 
+*/
+
+import java.util.Iterator;
+
+public class DoubleCircularLinkedList implements Iterable<Integer>{
+    //节点类
+    private static class Node {
+        private Node prev;
+        private int value;
+        private Node next;
+
+        public Node(Node prev, int value, Node next) {
+            this.prev = prev;
+            this.value = value;
+            this.next = next;
+        }
+    }
+
+    // 哨兵节点（sentinel）- 不存储实际数据，用于简化边界条件处理
+    // 刚创建时：prev = null, next = null
+    // 初始化后：在构造函数中会让prev和next都指向自己，形成空的双向环形链表
+    private Node sentinel = new Node(null, -1, null);
+
+    public DoubleCircularLinkedList() {
+        // 初始化空的双向环形链表
+        // 让哨兵节点的prev和next都指向自己，表示这是一个空链表
+        // 这样设计后，判断空链表的条件是：sentinel.next == sentinel
+        sentinel.next = sentinel;
+        sentinel.prev = sentinel;
+        /*
+        初始化后：
+     ┌──────────────┐
+     ↓              │
+  ┌──┴──┐       ┌──┴──┐
+  │prev │       │next │
+  └──┬──┘       └──┬──┘
+     ↑              │
+     └──────────────┘
+         */
+    }
+
+    //添加新节点到第一个位置
+    public void addFirst(int value){
+        Node next = sentinel.next;//头哨兵的下一个节点,也就是要插入的位置
+        Node newNode = new Node(sentinel, value, next);
+        sentinel.next = newNode;
+        next.prev = newNode;
+        /*
+        // 添加节点A后
+     ┌─────────────────────────┐
+     ↓                         │
+  ┌──────┐     ┌──────┐     ┌──┴──┐
+  │sent  │←───→│  A   │←───→│sent │
+  │ prev │     │      │     │ next│
+  └──────┘     └──────┘     └──┬──┘
+     ↑                         │
+     └─────────────────────────┘
+         */
+    }
+
+    //添加新节点到最后一个位置
+    public void addLast(int value){
+        Node prev = sentinel.prev;
+        Node newNode = new Node(prev, value, sentinel);
+        prev.next = newNode;
+        sentinel.prev = newNode;
+    }
+
+    //删除第一个节点
+    public void removeFirst(){
+        Node removed = sentinel.next;//待删除的节点
+        if(removed == sentinel){
+            throw new IllegalArgumentException("链表为空");
+        }
+        Node next = removed.next;//待删除节点的后一个节点
+        sentinel.next = next;
+        next.prev = sentinel;
+    }
+
+    //删除最后一个节点
+    public void removeLast(){
+        Node removed = sentinel.prev;
+        if(removed == sentinel){
+            throw new IllegalArgumentException("链表为空");
+        }
+        Node prev = removed.prev;
+        prev.next = sentinel;
+        sentinel.prev = prev;
+    }
+
+    //根据给定的值删除节点
+    public void removeByValue(int value){
+        Node node = findValue(value);
+        if(node == null) {
+            throw new IllegalArgumentException("链表中没有此值");
+        }
+        Node prev = node.prev;
+        Node next = node.next;
+        prev.next = next;
+        next.prev = prev;
+    }
+
+    //辅助方法，找到值所在的对象
+    private Node findValue(int value){
+        for(Node pointer = sentinel.next ; pointer != sentinel ; pointer = pointer.next){
+            if(pointer.value == value){
+                return pointer;
+            }
+        }
+        return null;
+    }
+
+    @Override
+    public Iterator<Integer> iterator() {
+        return new Iterator<Integer>() {
+            Node pointer = sentinel.next;
+            @Override
+            public boolean hasNext() {
+                return pointer != sentinel;
+            }
+
+            @Override
+            public Integer next() {
+                int value = pointer.value;
+                pointer = pointer.next;
+                return value;
+            }
+        };
+    }
+}
