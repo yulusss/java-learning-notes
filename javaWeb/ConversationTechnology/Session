@@ -1,0 +1,403 @@
+## Session基本原理
+
+###### 1.当用户打开浏览器，访问某个网站，操作session时，服务器就会在内存（在服务端）为该浏览器分配一个session对象，该session对象被这个浏览器独占，如图
+
+![截屏2026-03-28 11.20.17](assets/截屏2026-03-28 11.20.17.png)
+
+###### 2.这个session对象也可以看作是一个容器，session对象默认存在时间为30min，也可修改
+
+------
+
+## Session作用
+
+1. 网上商城中的购物车
+2. 保存登录用户的信息
+3. 将数据放入到Session中，供用户在访问不同页面时，实现跨页面访问
+4. 防止用户非法登录到某个页面
+5. ......
+
+------
+
+## 如何理解Session
+
+1. ###### Session存储示意图
+
+![截屏2026-03-28 11.30.51](assets/截屏2026-03-28 11.30.51.png)
+
+2) ###### 你可以把session 看作是一个容器类似HashMap，有两列（K-V），每一行就是session的一个属性。
+
+3) ###### 每个属性包含有两个部分，一个是该属性的名字（String），另外一个是它的值（Object）
+
+## Session常用方法
+
+###### 1.创建和获取Session
+
+```java
+HttpSession hs = request.getSession();
+```
+
+第一次调用是创建Session会话，之后调用时获取创建好的Session对象
+
+###### 2.向Session添加属性
+
+```java
+hs.setAttribute(String name , Object value);
+```
+
+###### 3.从Session得到某个属性
+
+```java
+Object object = hs.getAttribute(String name);
+```
+
+###### 4.从Session删除某个属性
+
+```java
+hs.removeAttribute(String name);
+```
+
+###### 5.isNew() 判断是不是刚创建出来的Session
+
+###### 6.每个Session都有1个唯一标识id值，通过getId()得到Session的会话id值
+
+## Session底层机制分析
+
+#### 简单分析图
+
+![截屏2026-03-28 11.52.16](assets/截屏2026-03-28 11.52.16.png)
+
+#### 底层机制分析图
+
+![截屏2026-03-28 12.01.54](assets/截屏2026-03-28 12.01.54.png)
+
+可以理解为在Tomcat中还维护了一个容器 -》sessionMapping
+
+```java
+//第一个 String 代表 JSessionId,第二个 HttpSession 表示一个 session 对象
+public static final ConcurrentHashMap<String , HttpSession>
+  sessionMapping = new ConcurrentHashMap<>();
+```
+
+------
+
+## 代码演示-Session底层实现机制-创建和读取Session
+
+##### 创建和操作
+
+```java
+/**
+ * @author 云禄
+ * @version 1.0
+ */
+
+public class CreateSession extends HttpServlet {
+    @Override
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        //获取 Session，同时也可能创建 Session
+        HttpSession session = req.getSession();
+        //获取 Session 的 id
+        System.out.println("Session id = " + session.getId());
+        //存放数据
+        session.setAttribute("username" , "Felix");
+
+        //给浏览器发送一个回复
+        resp.setContentType("text/html;charset:utf-8");
+        PrintWriter writer = resp.getWriter();
+        writer.println("<h1>创建/操作 Session 成功</h1>");
+        writer.flush();
+        writer.close();
+
+        //结果：
+        /*
+        第一次创建 Session 时，响应头中带有 SessionId
+        因为在第一次创建时，浏览器中并没有该 Session 的信息，也就不存在 SessionId
+        需要将该 SessionId 返回给浏览器，即放在响应头中
+        而请求头中带有网页自带的 jsp 的 SessionId
+        响应头中的 SessionId，就是该 Session 的 SessionId
+
+        服务器内部发生了什么：
+         - 检查请求头中的Cookie，没有找到JSESSIONID
+         - 创建新的HttpSession对象
+         - 生成唯一的JSESSIONID，比如: ABC123DEF456
+         - 将Session存入Tomcat的Session容器中
+           sessionMapping.put("ABC123DEF456", session)
+
+         服务器自动在响应头中添加Cookie
+        resp.addCookie(new Cookie("JSESSIONID", "ABC123DEF456"));
+
+
+        第二次浏览时，响应头中不再带有新的 SessionId，因为浏览器已经存在该 SessionId
+        此时请求时携带该 Cookie ，也就是说请求头中的 原 SessionId 变成当前的 SessionId
+
+        服务器内部发生了什么：
+        1. 从请求头中解析Cookie，获取JSESSIONID=ABC123DEF456
+        2. 在sessionMapping中查找: sessions.get("ABC123DEF456")
+        3. 找到对应的Session对象并返回
+        4. 更新Session的最后访问时间
+
+        响应头中不再有Set-Cookie头（除非Session有更新或需要刷新）
+         */
+    }
+
+    @Override
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        doPost(req , resp);
+    }
+}
+```
+
+##### 读取
+
+```java
+/**
+ * @author 云禄
+ * @version 1.0
+ */
+
+public class ReadSession extends HttpServlet {
+    @Override
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        //读取 Session
+        //1.获取 Session，如果没有 Session ，也会创建
+        HttpSession session = req.getSession();
+        //2.读取属性
+        Object username = session.getAttribute("username");
+        if(username != null) {
+            System.out.println((String) username);
+        }else{
+            System.out.println("没有该Session属性");
+        }
+    }
+
+    @Override
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        doPost(req , resp);
+    }
+}
+```
+
+## Session生命周期
+
+1) ###### <font color=red>public void setMaxInactiveInterval(int interval)</font> 设置 Session 的超时时间（以秒为单位），超过指定的时长，Session就会被销毁
+
+2) ###### 值为<font color=red>正数的时候</font>，设定Session的超时时长
+
+3) ###### 值为<font color=red>负数</font>时，永不超时
+
+4) ###### <font color=red>public void getMaxInactiveInterval()</font>获取Session的超时时间
+
+5) ###### <font color=red>public void invalidate()</font>让当前Session立即无效
+
+6) ###### 如果没有调用setMaxInactiveInterval(int interval)来指定Session生命时长，Tomcat会以默认时长为准，Session默认时长为30分钟，可以在tomcat的web.xml来设置
+
+7) ###### Session的生命周期指的是：客户端/浏览器两次请求<font color=red>最大间隔时长</font>，而不是<font color=red>累计时长</font>，即当客户端访问了自己的session，session的生命周期将从0开始计算（指的是同一个会话两次请求之间的间隔时间），<font color = red>每一次访问 session 都会重新计时，除非中间超过了最大间隔时长</font>
+
+```java
+/**
+ * Session生命周期时间线
+ */
+public class SessionTimeline {
+    
+    /*
+    时间线示例（假设maxInactiveInterval = 1800秒 = 30分钟）：
+    
+    T0: 10:00:00 - 创建Session
+        - creationTime = 10:00:00
+        - lastAccessedTime = 10:00:00
+        - 过期时间 = 10:00:00 + 30分钟 = 10:30:00
+        - 状态：活跃
+    
+    T1: 10:05:00 - 第一次访问
+        - creationTime = 10:00:00（不变）
+        - lastAccessedTime = 10:05:00（更新）
+        - 过期时间 = 10:05:00 + 30分钟 = 10:35:00
+        - 状态：活跃，生命周期延长
+    
+    T2: 10:20:00 - 第二次访问
+        - creationTime = 10:00:00（不变）
+        - lastAccessedTime = 10:20:00（更新）
+        - 过期时间 = 10:20:00 + 30分钟 = 10:50:00
+        - 状态：活跃，生命周期延长
+    
+    T3: 10:50:00 - 未访问
+        - 此时距离最后访问时间(10:20:00)已经过去30分钟
+        - Session过期，被容器销毁
+        - 状态：销毁
+    */
+    
+    /*
+    特殊情况：创建后从未访问
+    T0: 10:00:00 - 创建Session
+        - creationTime = 10:00:00
+        - lastAccessedTime = 10:00:00（初始值等于创建时间）
+        - 过期时间 = 10:00:00 + 30分钟 = 10:30:00
+    
+    T1: 10:30:00 - 从未访问
+        - 到达过期时间，Session被销毁
+        - 即使从未被业务代码使用，也会过期
+    
+    结论：Session的过期倒计时从创建完成的那一刻就开始了
+    */
+}
+```
+
+8) ###### 底层：Tomcat用一个线程来轮询会话状态，如果某个会话的空闲时间超过设定的最大值，则将该会话销毁
+
+## 实例
+
+演示登录成功或失败，跳转到不同页面，如果没有登录直接进入登录成功的网址，自动跳转到登录界面
+
+##### 登录界面
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>登录</title>
+</head>
+<body>
+<h1>登录用户</h1>
+<form action="check" method="post">
+    username: <input type="text" name="username"><br/><br/>
+    password: <input type="password" name="password"><br/><br/>
+    <input type="submit" value="提交">
+</form>
+</body>
+</html>
+```
+
+##### 检查数据
+
+```java
+/**
+ * @author 云禄
+ * @version 1.0
+ */
+
+public class LoginCheckServlet extends HttpServlet {
+
+    private static final String CORRECT_PASSWORD = "666666";
+
+    @Override
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp)
+            throws ServletException, IOException {
+
+        String username = req.getParameter("username");
+        String password = req.getParameter("password");
+
+        // 输入验证
+        if (username == null || username.trim().isEmpty()) {
+            // 用户名空，返回登录页并提示
+            resp.setContentType("text/html;charset=utf-8");
+            PrintWriter writer = resp.getWriter();
+            writer.println("<script>");
+            writer.println("alert('用户名不能为空');");
+            writer.println("history.back();"); // 返回上一页
+            writer.println("</script>");
+            writer.close();
+            return;
+        }
+
+        // 密码验证
+        if (CORRECT_PASSWORD.equals(password)) {
+            // 登录成功，创建Session
+            HttpSession session = req.getSession();
+            session.setAttribute("user", username);
+
+            // 重定向到管理页面
+            resp.sendRedirect(req.getContextPath() + "/manager");
+        } else {
+            // 登录失败，重定向到错误页面
+            resp.sendRedirect(req.getContextPath() + "/err.html");
+        }
+    }
+
+    @Override
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp)
+            throws ServletException, IOException {
+        doPost(req, resp);
+    }
+}
+```
+
+##### 登录成功页面
+
+```java
+/**
+ * @author 云禄
+ * @version 1.0
+ */
+
+public class ManagerService extends HttpServlet {
+    @Override
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        HttpSession session = req.getSession();
+        resp.setContentType("text/html;charset=utf-8");
+        PrintWriter writer = resp.getWriter();
+        Object user = session.getAttribute("user");
+        if(user != null){
+            writer.println("<h2>欢迎管理员" + (String)user + "</h2>");
+        }else{
+            resp.sendRedirect(req.getContextPath() + "/login.html");
+        }
+        writer.flush();
+        writer.close();
+    }
+
+    @Override
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        doPost(req , resp);
+    }
+}
+```
+
+##### 登录失败页面
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>error</title>
+</head>
+<body>
+<!-- "/" 被解析成 http://Localhost:8080/-->
+<!--如果没有 / 会以当前浏览器地址栏 的 http://localhost：8080/工程路径../资源 去掉资源部分作为参考路径-->
+<!--建议带上 / ，因为一旦相对路径改变了，可能就找不到了-->
+<a href="/cookie/login.html">点击返回重新登录</a>
+</body>
+</html>
+```
+
+##### 重定向与转发的决策
+
+```java
+/**
+ * 选择重定向还是转发的决策逻辑
+ */
+public class RedirectOrForward {
+    
+    /*
+    问题1: 操作是否改变服务器状态（增删改）？
+    ├─ 是 → 使用重定向（防止重复提交）
+    └─ 否 → 继续判断
+    
+    问题2: 是否需要携带数据到目标页面？
+    ├─ 是 → 使用转发（共享request）
+    └─ 否 → 继续判断
+    
+    问题3: 地址栏是否需要变化？
+    ├─ 是 → 使用重定向
+    └─ 否 → 使用转发
+    
+    问题4: 是否跨应用跳转？
+    ├─ 是 → 使用重定向
+    └─ 否 → 使用转发
+    
+    问题5: 是否需要访问WEB-INF下的资源？
+    ├─ 是 → 使用转发
+    └─ 否 → 两种都可以
+    */
+}
+```
