@@ -1,0 +1,276 @@
+## 基本介绍
+
+1. ###### JSTL标签库 是指 JSP Standard Tag Library JSP 标准标签库。
+
+2. ###### El 表达式是为了替代 JSP 的表达式脚本，JSTL 是为了替换代码脚本。
+
+3. ###### JSTL由五个标签库组成
+
+![截屏2026-03-29 14.39.21](assets/截屏2026-03-29 14.39.21.png)
+
+4. ###### 使用 JSTL 之前需要引入 jar 包
+
+```xml
+<dependencies>
+    <!-- JSTL API -->
+    <dependency>
+        <groupId>jakarta.servlet.jsp.jstl</groupId>
+        <artifactId>jakarta.servlet.jsp.jstl-api</artifactId>
+        <version>3.0.0</version>
+    </dependency>
+    
+    <!-- JSTL 实现 -->
+    <dependency>
+        <groupId>org.glassfish.web</groupId>
+        <artifactId>jakarta.servlet.jsp.jstl</artifactId>
+        <version>3.0.1</version>
+    </dependency>
+</dependencies>
+```
+
+------
+
+
+
+## 基本使用
+
+```jsp
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%--
+  Created by IntelliJ IDEA.
+  User: a728910
+  Date: 2026/3/29
+  Time: 14:43
+  To change this template use File | Settings | File Templates.
+--%>
+<%@ page contentType="text/html;charset=UTF-8" language="java" isELIgnored="false" %>
+<html>
+<head>
+    <title>jstl</title>
+</head>
+<body>
+
+<%--
+<c:if test="${10 > 2}">
+  <h1>10 > 2</h1>
+</c:if>
+这段代码相当于
+if(10 > 2){
+    out.println("<h1>10 > 2</h1>");
+}
+
+--%>
+<c:if test="${10 > 2}">
+    <h1>10 > 2</h1>
+</c:if>
+</body>
+</html>
+
+```
+
+------
+
+## Set标签
+
+```jsp
+<c:set scope="request" var="name" value="Felix"/>
+```
+
+##### <c:set /> 可以往域中保存数据
+
+1. ###### 等价 域对象.setAttribute(key,value);
+
+2. ###### scope 属性设置保存到那个域
+
+   - page 表示 PageContext 域（默认值）
+   - request 表示 Request 域
+   - session 表示 Session 域
+   - application 表示 ServletContext 域
+
+3. ###### var 属性设置 key 是什么
+
+4. ###### ﻿﻿﻿value 属性设置值
+
+```jsp
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%--
+  Created by IntelliJ IDEA.
+  User: a728910
+  Date: 2026/3/29
+  Time: 14:56
+  To change this template use File | Settings | File Templates.
+--%>
+<%@ page contentType="text/html;charset=UTF-8" language="java" isELIgnored="false" %>
+<html>
+<head>
+    <title>Title</title>
+</head>
+<body>
+
+<%--
+对应 java 代码
+<%
+    request.setAttribute("username" , "Felix");
+%>
+--%>
+<c:set scope="request" var="username" value="Felix"/>
+<%--取出 username 的值--%>
+username = ${requestScope.username}
+
+</body>
+</html>
+```
+
+------
+
+
+
+## if标签
+
+```jsp
+<c:if test="${10 > 2}"> Hello </c:if>
+```
+
+1. ###### ﻿﻿if 标签用来做 if 判断。
+
+2. ###### ﻿﻿﻿test 属性表示判断的条件（用 EL 表达式输出）
+
+------
+
+## choose标签
+
+```jsp
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%--
+  Created by IntelliJ IDEA.
+  User: a728910
+  Date: 2026/3/29
+  Time: 15:09
+  To change this template use File | Settings | File Templates.
+--%>
+<%@ page contentType="text/html;charset=UTF-8" language="java" isELIgnored="false" %>
+<html>
+<head>
+    <title>Title</title>
+</head>
+<body>
+<c:set scope="request" var="score" value="70"/>
+<c:choose>
+<%--    1. 如果＄｛requestScope.score｝那么就明确的指定从request域对象取出数据--%>
+<%--    2．如果$｛score｝，就按照从小到大的域范围去获取--%>
+    <c:when test="${requestScope.score > 80}">
+        <h1>优秀</h1></c:when>
+    <c:when test="${requestScope.score < 80 && requestScope.score > 60}">
+        <h1>及格</h1></c:when>
+    <c:when test="${requestScope.score <= 60}">
+        <h1>不及格</h1></c:when>
+</c:choose>
+</body>
+</html>
+```
+
+------
+
+
+
+## forEach标签
+
+```jsp
+<c:forEach/>
+```
+
+###### 用来遍历输出，一共四种形式:
+
+- ﻿﻿普通遍历输出i到j
+- ﻿﻿遍历数组
+- ﻿﻿遍历Map
+- ﻿﻿遍历List
+
+```jsp
+<%@ page import="java.util.HashMap" %>
+<%@ page import="com.felix.bean.Monster" %>
+<%@ page import="java.util.ArrayList" %>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%--
+  Created by IntelliJ IDEA.
+  User: a728910
+  Date: 2026/3/29
+  Time: 15:19
+  To change this template use File | Settings | File Templates.
+--%>
+<%@ page contentType="text/html;charset=UTF-8" language="java" isELIgnored="false" %>
+<html>
+<head>
+    <title>Title</title>
+</head>
+<body>
+<%--
+    第一种遍历方式
+    1.遍历1 - 5
+    2.输出 begin 属性设置开始的索引 end 属性设置结束的索引
+    3.var属性表示循环的变量（也是当前正在遍历到的数据）
+    4.等价于 for (int i = 1; i <= 5; i++){}
+    5.默认情况下 i 会默认加一
+    6.step="1" 表示每次递增 1
+--%>
+<ul>
+<c:forEach begin="1" end="5" var="i" step="1">
+<%--    此处的 i 就是从 var 里来的--%>
+    <li>排名: ${i}</li>
+</c:forEach>
+</ul>
+
+<%--第二种遍历方式--%>
+<%
+    request.setAttribute("sports" , new String[]{"football" , "basketball"});
+%>
+<%--
+    ‹c:forEach items="${ requestScope.sports }" var="item"/>
+    1.items 遍历的集合
+    2.var遍历到的数据
+    3.等价于 for (Object item: arr){}
+--%>
+<c:forEach items="${requestScope.sports}" var="sport">
+    运动: ${sport}
+</c:forEach>
+
+<%--第三种遍历方式--%>
+<%
+    HashMap<String , String> map = new HashMap<>();
+    map.put("key1" , "Beijing");
+    map.put("key2" , "Shanghai");
+    map.put("key3" , "Shenzhen");
+    request.setAttribute("map" , map);
+%>
+<%--
+    1. items 遍历的map集合
+    2. var遍历到的数据
+    3. entry.key 取出 key
+    4. entry.value取出 value
+--%>
+<c:forEach items="${map}" var="city">
+    城市信息: ${city.key} + ${city.value}
+</c:forEach>
+
+<%--第四种遍历方式--%>
+<%
+    ArrayList<Monster> list = new ArrayList<Monster>();
+    list.add(new Monster(1 , "Felix" , 18));
+    list.add(new Monster(2 , "Harry" , 14));
+    list.add(new Monster(3 , "Tom" , 17));
+    request.setAttribute("list" , list);
+%>
+<%--
+    items 表示遍历的集合var表示遍历到的数据
+    begin 表示遍历的开始索引值，从0开始计算
+    end 表示结束的索引值
+    step 属性表示遍历的步长值
+    varStatus 属性表示当前遍历到的数据的状态，可以得到step,begin,end等属性值
+--%>
+<br/>
+<c:forEach items="${list}" var="monster">
+    学生信息: ${monster.id}--${monster.name}--${monster.age}<br/>
+</c:forEach>
+</body>
+</html>
+```
