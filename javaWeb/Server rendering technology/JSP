@@ -1,0 +1,645 @@
+## 为什么需要JSP
+
+1. ###### 在servlet做页面非常不方便
+
+2. ###### 此时就需要使用JSP
+
+3. ###### JSP = html+java代码+标签+javascript+css
+
+
+
+------
+
+
+
+## JSP基本介绍
+
+1. ###### JSP全称是Java Server Pages，java的服务器页面，就是服务器端渲染技术
+
+2. ###### 最大的特点在于，写JSP就像在写HTML
+
+- 相比HTML而言，HTMl只能为用户提供静态页面，而JSP技术允许在页面中嵌套java代码，为用户提供动态数据
+- 相比Servlet而言，Servlet很难对数据进行排版，而JSP除了可以用java代码产生动态数据的同时，也很容易对数据进行排版
+
+3. ###### JSP技术基于Servlet，可以理解成JSP就是对Servlet的封装
+
+4. ###### 会使用JSP，再使用thymeleaf是很容易的事情
+
+
+
+------
+
+
+
+## JSP快速使用
+
+```jsp
+<%--
+  Created by IntelliJ IDEA.
+  User: a728910
+  Date: 2026/3/28
+  Time: 17:39
+  To change this template use File | Settings | File Templates.
+--%>
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<html>
+<head>
+    <title>JSP求和计算器</title>
+</head>
+<body>
+<h1>JSP求和计算器</h1>
+<%
+    //在JSP的该标签中，可以写java代码
+    int i = 10;
+    int j = 20;
+    int result = i + j;
+
+    //JSP中内置了一些对象，可以直接使用，比如 out
+    out.println(i + " + " + j + " = " + result);
+%>
+</body>
+</html>
+
+```
+
+### 细节
+
+###### JSP不能像HTML页面，直接在浏览器运行，只能通过Tomcat来访问JSP页面
+
+------
+
+## JSP运行原理
+
+1. ###### JSP页面本质是一个Servlet程序，其性能是和java关联的，只是模样并不被认可
+
+2. ###### 第一次访问JSP页面的时候，Tomcat服务器会把JSP页面解析成一个java源文件，并且对它进行编译成为 .class 字节码程序
+
+
+
+------
+
+
+
+## JSP-page指令
+
+```jsp
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+```
+
+1. ###### language表示JSP翻译后是什么语言文件，只支持java
+
+2. ###### contentType表示JSP返回的数据类型，对应源码中的 response.setContentType()
+
+3. ###### pageEncoding属性表示当前JSP页面文件本身的字符集
+
+4. ###### import属性跟java源码中一样，用于导包，导类
+
+
+
+------
+
+
+
+## JSP三种常用脚本
+
+1. ### 声明脚本
+
+   - ###### 声明脚本的格式是：<%! 声明java 代码 %>
+
+   - ###### 作用：定义JSP的需要属性，方法，静态代码块和内部类等
+
+   - ###### 应用实例
+
+```jsp
+<%--
+  Created by IntelliJ IDEA.
+  User: a728910
+  Date: 2026/3/28
+  Time: 18:10
+  To change this template use File | Settings | File Templates.
+--%>
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<html>
+<head>
+    <title>JSP声明脚本</title>
+</head>
+<body>
+<h1>JSP声明脚本</h1>
+<%!
+    //这里可以声明该JSP需要的属性，方法，静态代码块，内部类
+    //也就是 statement.jsp 对应的 statement_jsp 类定义成员
+
+    //1.属性
+    private String name = "Felix";
+    private int age;
+    private static String job;
+
+    //2.方法
+    public String getName(){
+        return name;
+    }
+
+    //3.静态代码块
+    static{
+        job = "programming";
+    }
+%>
+</body>
+</html>
+
+```
+
+2. ## 表达式脚本
+
+   - ###### 表达式脚本的格式是：<%= 表达式 %>
+
+   - ###### 表达式脚本的作用：在JSP页面上输出数据
+
+   - ###### 表达式脚本中的表达式不能以分号结束
+
+   - ###### 应用实例
+
+```jsp
+<%--
+  Created by IntelliJ IDEA.
+  User: a728910
+  Date: 2026/3/28
+  Time: 18:41
+  To change this template use File | Settings | File Templates.
+--%>
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<html>
+<head>
+    <title>表达式脚本的使用</title>
+</head>
+<body>
+<h1>个人信息</h1>
+<%
+    String name = "Felix";
+    String email = request.getParameter("email");
+%>
+用户名: <%= name %><br>
+工作: <%= "programming" %><br>
+年龄: <%= request.getParameter("age") %><br>
+电邮: <%=email%>
+</body>
+</html>
+```
+
+3. ## 代码脚本
+
+   - ###### 代码脚本的语法是：<% java代码 %>
+
+   - ###### 代码脚本的作用是：可以在JSP页面中，编写需要的功能(使用java)
+
+   - ###### 可以由多个代码脚本组合完成一个完整的java语句
+
+   - ###### 代码脚本还可以和表达式脚本一起组合使用，在JSP页面上输出数据
+
+#### 外部创建一个类
+
+```java
+package com.felix.bean;
+
+/**
+ * @author 云禄
+ * @version 1.0
+ */
+
+public class Monster {
+    private Integer id;
+    private String name;
+    private Integer age;
+
+    public Monster(Integer id, String name, Integer age) {
+        this.id = id;
+        this.name = name;
+        this.age = age;
+    }
+
+    public Integer getId() {
+        return id;
+    }
+
+    public void setId(Integer id) {
+        this.id = id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public Integer getAge() {
+        return age;
+    }
+
+    public void setAge(Integer age) {
+        this.age = age;
+    }
+
+    @Override
+    public String toString() {
+        return "Monster{" +
+                "id=" + id +
+                ", name='" + name + '\'' +
+                ", age=" + age +
+                '}';
+    }
+}
+```
+
+#### JSP页面
+
+```jsp
+<%@ page import="java.util.ArrayList" %>
+<%@ page import="com.felix.bean.Monster" %><%--
+  Created by IntelliJ IDEA.
+  User: a728910
+  Date: 2026/3/28
+  Time: 18:54
+  To change this template use File | Settings | File Templates.
+--%>
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<html>
+<head>
+    <title>代码脚本的使用</title>
+</head>
+<body>
+<h1>代码脚本使用</h1>
+<%
+    //创建 ArrayList,放入两个 monster 对象
+    ArrayList<Monster> monsterList = new ArrayList<>();
+    monsterList.add(new Monster(1, "jack", 19));
+    monsterList.add(new Monster(2, "tom", 16));
+%>
+<table bgcolor="#a9a9a9" border="1px" width="200px">
+    <tr>
+        <th>id</th>
+        <th>name</th>
+        <th>age</th>
+    </tr>
+    <%
+        for (Monster monster : monsterList) {
+    %>
+    <tr>
+        <td><%=monster.getId()%>
+        </td>
+        <td><%=monster.getName()%>
+        </td>
+        <td><%=monster.getAge()%>
+        </td>
+        \
+    </tr>
+    <%
+        }
+    %>
+    <tr>
+        <td></td>
+    </tr>
+</table>
+</body>
+</html>
+```
+
+------
+
+
+
+## JSP的内置对象
+
+------
+
+### 基本介绍
+
+1. ###### JSP内置对象(inbuild)，是指Tomcat在翻译JSP页面成为Servlet后，内部提供的九大对象，就是内置对象
+
+2. ###### 内置对象是已经创建好的对象，可以直接使用，不需要手动定义
+
+
+
+### JSP九大内置对象
+
+1. ###### out向客户端输出数据，out.ptintln("");
+
+*out 的类型是 JspWriter，父类就是 Writer*
+
+2. ###### request 客户端的http请求
+
+*request 就是 HttpServletRequest*
+
+3. ###### response 响应对象
+
+*response 就是 HttpServletResponse*
+
+4. ###### session 会话对象
+
+*session 就是 HttpSession*
+
+5. ###### application 对应 ServletContext
+
+*application 类型就是 ServletContext*
+
+6. ###### pageContext JSP页面的上下文，是一个域对象，可以 setAttribute()，作用范围只是本页面
+
+*pageContext 可以存放数据（属性），但是该数据只能在本页面使用*
+
+7. ###### exception 异常对象，getMessage()
+
+*使用比较少*
+
+8. ###### page 代表JSP这个实例本身
+
+9. ###### config 代表 ServletConfig
+
+*config 内置对象的类型就是ServletConfig*
+
+
+
+### 继承关系
+
+
+
+![截屏2026-03-28 19.33.19](assets/截屏2026-03-28 19.33.19.png)
+
+## JSP域对象
+
+------
+
+### JSP四大域对象介绍
+
+1. ###### pageContext(域对象，存放的数据只能在当前页面使用)
+
+![截屏2026-03-28 19.56.54](assets/截屏2026-03-28 19.56.54.png)
+
+2. ###### request(域对象，存放的数据在一次request请求有效)
+
+![截屏2026-03-28 20.02.35](assets/截屏2026-03-28 20.02.35.png)
+
+3. ###### session(域对象，存放的数据在一次会话有效)
+
+![截屏2026-03-28 20.06.39](assets/截屏2026-03-28 20.06.39.png)
+
+4. ###### application(域对象，存放的数据在整个Web应用运行期间有效)
+
+![截屏2026-03-28 20.12.23](assets/截屏2026-03-28 20.12.23.png)
+
+
+
+
+
+### 实例演示
+
+#### 写入数据
+
+```jsp
+<%--
+  Created by IntelliJ IDEA.
+  User: a728910
+  Date: 2026/3/29
+  Time: 09:00
+  To change this template use File | Settings | File Templates.
+--%>
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<html>
+<head>
+    <title>scope文件</title>
+</head>
+<body>
+<%
+    //在不同的域对象中，放入数据
+    //因为四个域对象是不同的对象，因此 key 相同时，不会冲突
+    pageContext.setAttribute("k1" , "pageContext数据(k1)");
+    request.setAttribute("k1" , "request数据(k1)");
+    session.setAttribute("k1" , "session数据(k1)");
+    application.setAttribute("k1" , "application数据(k1)");
+
+    //请求转发
+    //request.getRequestDispatcher("/scope2.jsp").forward(request , response);
+    //此时pageContext不能被访问到
+
+    //重定向
+    String path = request.getContextPath();
+    response.sendRedirect(path + "/scope2.jsp");
+    //此时 pageContext 和 request 不能被访问到
+
+    //当浏览器关闭重启，或是更换浏览器，此时直接访问时 scope2 只能访问到 application
+
+%>
+<h1>四个域对象，在本页面获取数据的情况</h1>
+pageContext = <%= pageContext.getAttribute("k1")%><br/>
+request = <%= request.getAttribute("k1")%><br/>
+session= <%= session.getAttribute("k1")%><br/>
+application = <%= application.getAttribute("k1")%><br/>
+</body>
+</html>
+
+```
+
+#### 读取数据
+
+```jsp
+<%--
+  Created by IntelliJ IDEA.
+  User: a728910
+  Date: 2026/3/29
+  Time: 09:08
+  To change this template use File | Settings | File Templates.
+--%>
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<html>
+<head>
+    <title>scope2</title>
+</head>
+<body>
+<h1>在 scope2 获取数据的情况</h1>
+pageContext = <%= pageContext.getAttribute("k1")%><br/>
+request = <%= request.getAttribute("k1")%><br/>
+session= <%= session.getAttribute("k1")%><br/>
+application = <%= application.getAttribute("k1")%><br/>
+</body>
+</html>
+```
+
+### 细节注意
+
+1. ###### 域对象时可以像Map一样存储数据的对象，同时四个域对象功能一样，不同的是对数据的存储范围
+
+2. ###### 从存储范围来看 --> pageContext < request < session < application
+
+
+
+------
+
+
+
+## Jsp请求转发标签
+
+```jsp
+<%--
+  Created by IntelliJ IDEA.
+  User: a728910
+  Date: 2026/3/29
+  Time: 09:24
+  To change this template use File | Settings | File Templates.
+--%>
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<html>
+<head>
+    <title>aa.jsp</title>
+</head>
+<body>
+<h1>aa.jsp</h1>
+<%--
+forword标签是非常常用的
+本质上就是 request.getRequestDispatcher("/bb.jsp").forward(request , response);
+--%>
+<jsp:forward page="/bb.jsp"></jsp:forward>
+</body>
+</html>
+```
+
+------
+
+
+
+## 简易计算器
+
+#### 主界面
+
+```jsp
+<%--
+  Created by IntelliJ IDEA.
+  User: a728910
+  Date: 2026/3/29
+  Time: 10:31
+  To change this template use File | Settings | File Templates.
+--%>
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<html>
+<head>
+    <title>简易计算器</title>
+    <script type="text/javascript">
+        function check(){
+            //得到num1,num2
+            var num1 = document.getElementById("num1").value;
+            var num2 = document.getElementById("num2").value;
+            var symbol = document.getElementById("symbol").value;
+
+            var allIntegerRegex = /^-?(0|[1-9]\d*)$/;
+            if(!allIntegerRegex.test(num1)){
+                alert("num1不是一个整数");
+                return false;
+            }else if(!allIntegerRegex.test(num2)){
+                alert("num2不是一个整数");
+                return false;
+            }else if(symbol === 'division' && parseInt(num2) === 0){
+                alert("除数不能为0");
+                return false;
+            }
+            return true;
+        }
+    </script>
+</head>
+<body>
+<h1>简易计算器</h1>
+<form method="post" action="<%=request.getContextPath()%>/calServlet" onsubmit="return check()">
+    num1: <input type="text" id="num1" name="num1"><br/>
+    num2: <input type="text" id="num2" name="num2"><br/>
+    运算符号: <select name="symbol" id="symbol">
+    <option value="add">+</option>
+    <option value="reduce">-</option>
+    <option value="multiple">*</option>
+    <option value="division">/</option>
+</select>
+    <input type="submit" value="计算">
+</form>
+</body>
+</html>
+```
+
+#### Servlet
+
+```java
+package com.felix.bean;
+
+import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.WebServlet;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
+import java.io.IOException;
+
+/**
+ * @author 云禄
+ * @version 1.0
+ */
+public class CalServlet extends HttpServlet {
+    @Override
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        doPost(req , resp);
+    }
+
+    @Override
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        String strNum1 = req.getParameter("num1");
+        int num1 = Integer.parseInt(strNum1);
+        String strNum2 = req.getParameter("num2");
+        int num2 = Integer.parseInt(strNum2);
+        String symbol = req.getParameter("symbol");
+        String sym = "";
+        int result = 0;
+        if(symbol.equals("add")){
+            sym = "+";
+            result = num1 + num2;
+        }else if(symbol.equals("reduce")){
+            sym = "-";
+            result = num1 - num2;
+        }else if(symbol.equals("multiple")){
+            sym = "*";
+            result = num1 * num2;
+        }else if(symbol.equals("division")){
+            sym = "/";
+            result = num1 / num2;
+        }
+
+
+        String format = String.format("%s %s %s = %s", num1, sym , num2 , result);
+        req.setAttribute("res" , format);
+        req.getRequestDispatcher("/cal/calRes.jsp").forward(req , resp);
+    }
+}
+```
+
+#### 结果页面
+
+```jsp
+<%--
+  Created by IntelliJ IDEA.
+  User: a728910
+  Date: 2026/3/29
+  Time: 11:05
+  To change this template use File | Settings | File Templates.
+--%>
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<html>
+<head>
+    <title>计算结果</title>
+</head>
+<body>
+<h1>计算结果</h1>
+<%
+    Object res = request.getAttribute("res");
+%>
+<h4><%=res%></h4>
+<a href="cal/calUI.jsp">返回</a>
+</body>
+</html>
+```
+
+------
+
