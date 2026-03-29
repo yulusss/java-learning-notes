@@ -1,0 +1,325 @@
+## EL表达式
+
+### 介绍
+
+1. ###### EL表达式全称：Expression Language，是表达式语言
+
+2. ###### EL表达式主要是代替JSP页面的表达式脚本--> <%= request.getAttribute("key"); %>
+
+3. ###### EL输出数据的时候，比JSP更简洁
+
+4. ###### EL表达式基本语法：${key}，可以看作一个语法糖
+
+#### 基本使用
+
+```jsp
+<%--
+  Created by IntelliJ IDEA.
+  User: a728910
+  Date: 2026/3/29
+  Time: 11:42
+  To change this template use File | Settings | File Templates.
+--%>
+
+<%--要使用 el 表达式，必须加上 isELIgnored="false"--%>
+<%@ page contentType="text/html;charset=UTF-8" language="java" isELIgnored="false"%>
+<html>
+<head>
+    <title>el表达式使用</title>
+</head>
+<body>
+<h1>el表达式使用</h1>
+<%
+    request.setAttribute("name" , "Felix");
+%>
+
+<%--
+如果 name 是 null
+jsp表达式 会返回 null
+el表达式 会返回 ""
+--%>
+
+<%--jsp表达式--%>
+名字: <%= request.getAttribute("name")%>
+
+<%--el表达式--%>
+名字: ${name}
+</body>
+</html>
+
+```
+
+------
+
+
+
+## EL表达式常用输出形式
+
+#### Book类
+
+```java
+/**
+ * @author 云禄
+ * @version 1.0
+ */
+
+public class Book {
+    private String name;//书名
+    private String[] writer;//作者
+    private List<String> reader;//读者
+    private Map<String , String> topics;//话题
+
+    @Override
+    public String toString() {
+        return "Book{" +
+                "name='" + name + '\'' +
+                ", writer=" + Arrays.toString(writer) +
+                ", reader=" + reader +
+                ", topics=" + topics +
+                '}';
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String[] getWriter() {
+        return writer;
+    }
+
+    public void setWriter(String[] writer) {
+        this.writer = writer;
+    }
+
+    public List<String> getReader() {
+        return reader;
+    }
+
+    public void setReader(List<String> reader) {
+        this.reader = reader;
+    }
+
+    public Map<String, String> getTopics() {
+        return topics;
+    }
+
+    public void setTopics(Map<String, String> topics) {
+        this.topics = topics;
+    }
+}
+```
+
+#### JSP页面
+
+```jsp
+<%@ page import="com.felix.bean.Book" %>
+<%@ page import="java.util.ArrayList" %>
+<%@ page import="java.util.HashMap" %><%--
+  Created by IntelliJ IDEA.
+  User: a728910
+  Date: 2026/3/29
+  Time: 13:46
+  To change this template use File | Settings | File Templates.
+--%>
+<%@ page contentType="text/html;charset=UTF-8" language="java" isELIgnored="false" %>
+<html>
+<head>
+    <title>el 表达式输出数据</title>
+</head>
+<body>
+<h1>el 表达式输出数据</h1>
+<%
+    //常见 Book 对象，放入相关的属性
+    Book book = new Book();
+    book.setName("假如给我三天光明");
+    book.setWriter(new String[]{"Felix , Tom , Jack"});
+    ArrayList<String> readers = new ArrayList<>();
+    readers.add("Alias");
+    readers.add("jar");
+    book.setReader(readers);
+    HashMap<String, String> topics = new HashMap<String, String>();
+    topics.put("topics1" , "Good");
+    topics.put("topics2" , "awful");
+    book.setTopics(topics);
+
+    //把 book 放入 request 域对象
+    request.setAttribute("book" , book);
+%>
+  
+book对象: ${book}<br/>
+book.name: ${book.name}<br/>
+book.writer: ${book.writer}<br/>
+book.writer[0]: ${book.writer[0]}<br/>
+book.readers: ${book.reader}<br/>
+book.reader(第2个): ${book.reader.get(1)}<br/>
+book.topics(第一个): ${book.topics.get("topics1")}
+
+
+</body>
+</html>
+```
+
+------
+
+
+
+## EL运算操作
+
+1. ###### 基本语法：${运算表达式}
+
+2. ###### 关系运算
+
+![截屏2026-03-29 14.06.40](assets/截屏2026-03-29 14.06.40.png)
+
+3. ###### 逻辑运算
+
+![截屏2026-03-29 14.07.29](assets/截屏2026-03-29 14.07.29.png)
+
+4. ###### 算数运算
+
+![截屏2026-03-29 14.08.07](assets/截屏2026-03-29 14.08.07.png)
+
+------
+
+
+
+## EL的empty运算
+
+1. ###### empty 运算可以判断一个数据是否为空，如果为空，返回true，反之false
+
+2. ###### 一下几种情况为空
+
+   - 值为null
+   - 值为空串
+   - 值是Object类型数组，长度为0
+   - list集合，元素个数为0
+   - map集合，元素个数为0
+
+```jsp
+<%
+    request.setAttribute("h1" , null);
+    request.setAttribute("h2" , "");
+    request.setAttribute("h3" , new String[]{});
+    request.setAttribute("h4" , new ArrayList<>());
+    request.setAttribute("h5" , new HashMap<>());
+%>
+h1是否为空: ${empty h1}
+h2是否为空: ${empty h2}
+h3是否为空: ${empty h3}
+h4是否为空: ${empty h4}
+h5是否为空: ${empty h5}
+```
+
+------
+
+
+
+## EL的三元运算
+
+1. ###### 表达式1？表达式2:表达式3
+
+2. ###### 如果表达式1的值为真，执行表达式2的值，反之执行表达式3的值
+
+```jsp
+<%
+    request.setAttribute("score" , 90);
+%>
+${score > 60?"及格":"不及格"}
+```
+
+------
+
+
+
+## EL的11个隐含对象
+
+###### EL有11个隐含对象，可以直接使用，其中常用的有4个
+
+![截屏2026-03-29 14.22.35](assets/截屏2026-03-29 14.22.35.png)
+
+###### 常用的是
+
+![截屏2026-03-29 14.23.41](assets/截屏2026-03-29 14.23.41.png)
+
+
+
+```jsp
+<%
+    pageContext.setAttribute("k1" , "pageContext数据(k1)");
+    request.setAttribute("k1" , "request数据(k1)");
+    session.setAttribute("k1" , "session数据(k1)");
+    application.setAttribute("k1" , "application数据(k1)");
+%>
+
+<%--jsb获取方式--%>
+<%=pageContext.getAttribute("k1")%>
+
+<%--EL获取域对象的数据--%>
+${requestScope.k1}
+${pageScope.k1}
+${sessionScope.k1}
+${applicationScope.k1}
+```
+
+
+
+## EL获取HTTP相关信息
+
+```jsp
+<%--
+  Created by IntelliJ IDEA.
+  User: a728910
+  Date: 2026/3/29
+  Time: 14:31
+  To change this template use File | Settings | File Templates.
+--%>
+<%@ page contentType="text/html;charset=UTF-8" language="java" isELIgnored="false" %>
+<html>
+<head>
+    <title>Title</title>
+</head>
+<body>
+  
+<%--通过request 对 象 来 获 取 和HTTP 协 议 相 关 的 数 据--%>
+<%--request.getScheme() 它 可 以 获 取 请 求 的 协 议--%>
+<%--request.getServerName() 获 取 请 求 的 服 务 器 ip 或 域 名--%>
+<%--request.getServerPort() 获 取 请 求 的 服 务 器 端 口 号--%>
+<%--getContextPath() 获 取 当 前 工 程 路 径--%>
+<%--request.getMethod() 获 取 请 求 的 方 式 （ GET 或 POST）--%>
+<%--request.getRemoteHost() 获 取 客 户 端 的 ip 地 址--%>
+<%--session.getId() 获 取 会 话 的 唯 一 标 识--%>
+  
+协议： ${ pageContext.request.scheme }<br>
+服务器 ip：${ pageContext.request.serverName }<br>
+服务器端口：${ pageContext.request.serverPort }<br>
+工程路径：${ pageContext.request.contextPath }<br>
+请求方法：${ pageContext.request.method }<br>
+客户端 ip 地址：${ pageContext.request.remoteHost }<br>
+会话 id ：${ pageContext.session.id }<br>
+
+<h1>使用 jsp 表达式脚本获取如上信息</h1>
+ip 地址: <%=request.getRemoteHost() %> <br>
+
+<h1>使用 el 表达式形式获取信息</h1>
+<%
+    pageContext.setAttribute("req" , request);
+%>
+
+ip 地址: ${req.remoteHost} <br>
+获取请求方法: ${req.method} <br>
+  
+</body>
+</html>
+
+```
+
+
+
+
+
+
+
