@@ -1,0 +1,395 @@
+## 基本介绍
+
+1. ###### Listener 监听器是 javaWeb 的三大组件之一
+
+javaWeb的三大组件分别是：Servlet程序，Listener监听器，Filter过滤器
+
+2. ###### Listener 是 JavaEE的规范，就是接口
+
+3. ###### 监听器的作用是：监听某种变化(对象创建/销毁，属性变化)，触发对应方法完成对应的任务
+
+4. ###### javaWeb的监听器一共有8个，最常用的是 ServletContextListener
+
+------
+
+
+
+## ServletContextListener监听器
+
+1. ###### 作用：监听ServletContext创建或销毁(当Web应用启动时，就会创建ServletContext)，即生命周期监听
+
+2. ###### 相关方法
+
+```java
+void contextInitialized(ServletContextEvent sce) //创建ServletContext时触发
+contextDestoryed(ServletContextEvent sce)        //销毁ServletContext时触发
+```
+
+3. ###### 使用
+
+java程序
+
+```java
+package com.felix.listener;
+
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletContextEvent;
+import jakarta.servlet.ServletContextListener;
+
+/**
+ * @author 云禄
+ * @version 1.0
+ */
+
+/**
+ * 1.当一个类实现了 ServletContextListener 接口，这个类就是一个监听器
+ * 2.该类可以监听的事件 由该类实现的监听接口决定
+ * 3.该类可以监听 ServletContext 的创建和销毁
+ * 4.此时，FelixServletContextListener 就是一个监听者
+ * 5.当 Web 应用启动时，就会产生 ServletContextEvent 事件，会调用监听器的对应事件处理方法 contextInitialized
+ * 同时会传递一个事件对象
+ * 6.可以通过 ServletContextEvent 事件对象，获取需要的信息，然后在进行业务处理
+ * 7.因为需要在 web.xml 中配置，所以 Tomcat 知道这个监听器存在
+ */
+public class FelixServletContextListener implements ServletContextListener {
+
+    @Override
+    public void contextInitialized(ServletContextEvent sce) {
+        ServletContext servletContext = sce.getServletContext();
+
+        System.out.println("FelixServletContextListener 监听到 " +
+                servletContext + " 被创建");
+
+        //获取到 ServletContext 对象，进行业务处理
+    }
+
+    @Override
+    public void contextDestroyed(ServletContextEvent sce) {
+        ServletContext servletContext = sce.getServletContext();
+
+        System.out.println("FelixServletContextListener 监听到 " +
+                servletContext + " 销毁");
+    }
+}
+```
+
+web.xml文件
+
+```xml
+<!DOCTYPE web-app PUBLIC
+ "-//Sun Microsystems, Inc.//DTD Web Application 2.3//EN"
+ "http://java.sun.com/dtd/web-app_2_3.dtd" >
+
+<web-app>
+  <display-name>Archetype Created Web Application</display-name>
+  <!--配置监听器-->
+  <listener>
+    <listener-class>com.felix.listener.FelixServletContextListener</listener-class>
+  </listener>
+</web-app>
+```
+
+------
+
+## ServletContextAttributeListener监听器
+
+1. ###### 作用：监听ServletContext属性变化
+
+2. ###### 方法
+
+```java
+void attributeAdded（ServletContextAttributeEvent event） //添加属性时调用
+void attributeReplaced（ServletContextAttributeEvent event） //替换属性时调用
+void attributeRemoved（ServletContextAttributeEvent event） //移除属性时调用
+```
+
+3. ###### 这个监听器使用相对较少
+
+Servlet
+
+```java
+package com.felix.servlet;
+
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.WebServlet;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
+import java.io.IOException;
+import java.io.PrintWriter;
+
+/**
+ * @author 云禄
+ * @version 1.0
+ */
+
+@WebServlet(name = "HisServlet" , urlPatterns = "/hiServlet")
+public class HiServlet extends HttpServlet {
+    @Override
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        //给 servletContext 对象操作属性
+        ServletContext servletContext = req.getServletContext();
+        //添加
+        servletContext.setAttribute("name" , "Felix");
+        //修改
+        servletContext.setAttribute("name" , "Yules");
+        //删除
+        servletContext.removeAttribute("name");
+
+        resp.setContentType("text/html;charset=utf-8");
+        PrintWriter writer = resp.getWriter();
+        writer.println("<h1>HiServlet 操作结束</h1>");
+        writer.flush();
+        writer.close();
+    }
+
+    @Override
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        doPost(req , resp);
+    }
+}
+```
+
+ServletContextAttributeListener监听器
+
+```java
+package com.felix.listener;
+
+import jakarta.servlet.ServletContextAttributeEvent;
+import jakarta.servlet.ServletContextAttributeListener;
+
+/**
+ * @author 云禄
+ * @version 1.0
+ */
+
+public class FelixServletContextAttributeListener implements ServletContextAttributeListener {
+    @Override
+    public void attributeAdded(ServletContextAttributeEvent event) {
+        String name = event.getName();
+        Object value = event.getValue();
+        System.out.println("FelixServletContextAttributeListener监听到添加属性 " + name +
+                " = " + value);
+    }
+
+    @Override
+    public void attributeRemoved(ServletContextAttributeEvent event) {
+        String name = event.getName();
+        Object value = event.getValue();
+        System.out.println("FelixServletContextAttributeListener监听到删除属性 " + name +
+                " = " + value);
+    }
+
+    @Override
+    public void attributeReplaced(ServletContextAttributeEvent event) {
+        String name = event.getName();
+        Object value = event.getValue();
+        //输出的是修改前的信息
+        System.out.println("FelixServletContextAttributeListener监听到修改属性 " + name +
+                " = " + value);
+    }
+}
+```
+
+Web.xml
+
+```xml
+<!DOCTYPE web-app PUBLIC
+ "-//Sun Microsystems, Inc.//DTD Web Application 2.3//EN"
+ "http://java.sun.com/dtd/web-app_2_3.dtd" >
+
+<web-app>
+  <display-name>Archetype Created Web Application</display-name>
+  <!--配置监听器-->
+  <!--FelixServletContextListener-->
+  <listener>
+    <listener-class>com.felix.listener.FelixServletContextListener</listener-class>
+  </listener>
+
+  <!--FelixServletContextAttributeListener-->
+  <listener>
+    <listener-class>com.felix.listener.FelixServletContextAttributeListener</listener-class>
+  </listener>
+</web-app>
+```
+
+------
+
+
+
+## HttpSessionListener监听器
+
+1. ###### 作用：监听Session创建或销毁，即生命周期
+
+2. ###### 相关方法
+
+```java
+void sessionCreated（HttpSessionEvent se）//创建session时调用
+void sessionDestroyed（HttpSessionEvent se）//销毁session时调用
+```
+
+3. ###### 使用方法同前面的监听器一样，监控用户上线，离线
+
+Servlet端
+
+```java
+package com.felix.servlet;
+
+import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.WebServlet;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
+
+import java.io.IOException;
+
+/**
+ * @author 云禄
+ * @version 1.0
+ */
+@WebServlet(name = "HiSession" , urlPatterns = "/hiSession")
+public class HiSession extends HttpServlet {
+    @Override
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        doPost(req , resp);
+    }
+
+    @Override
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        //获取 Session 对象
+        HttpSession session = req.getSession();
+        //触发到 sessionCreated() 监听
+
+
+    }
+}
+```
+
+HttpSessionListener监听器
+
+```java
+package com.felix.listener;
+
+import jakarta.servlet.http.HttpSession;
+import jakarta.servlet.http.HttpSessionEvent;
+import jakarta.servlet.http.HttpSessionListener;
+
+/**
+ * @author 云禄
+ * @version 1.0
+ */
+
+public class FelixHttpSessionListener implements HttpSessionListener {
+    @Override
+    public void sessionCreated(HttpSessionEvent se) {
+        HttpSession session = se.getSession();
+        //当 session 被创建时，设置生命周期
+        //15秒 后自动销毁
+        session.setMaxInactiveInterval(15);
+        System.out.println("FelixHttpSessionListener 监听到 Session: "  + session +
+                " 创建,id = " + session.getId());
+        System.out.println("用户: " + session.getId() + "上线了");
+    }
+
+    @Override
+    public void sessionDestroyed(HttpSessionEvent se) {
+        HttpSession session = se.getSession();
+        System.out.println("FelixHttpSessionListener 监听到 Session: "  + session +
+                " 销毁,id = " + session.getId());
+        System.out.println("用户: " + session.getId() + "离线了");
+    }
+}
+```
+
+运行HiSession程序的过程
+
+![截屏2026-03-29 18.01.38](assets/截屏2026-03-29 18.01.38.png)
+
+------
+
+
+
+## HttpSessionAttributeListener监听器
+
+1. ###### 作用：监听Session属性的变化
+
+2. ###### 相关方法：
+
+```java
+void attributeAdded (ServletRequestAttribute Event srae); //添加属性时
+void attributeReplaced (ServletRequestAttributeEvent srae);//替换属性时
+void attributeRemoved (ServletRequestAttributeEvent srae); //移除属性吋
+```
+
+3. ###### 使用方法同前面的监听器一样，使用较少
+
+------
+
+
+
+## ServletRequestListener监听器
+
+1. ###### 作用：监听Request的创建或销毁，即Request的生命周期
+
+2. ###### 相关方法：
+
+```java
+void requestInitialized（ServletRequestEvent sre） //创建request时
+void requestDestroyed（ServletRequestEvent sre）//销毁request时
+```
+
+3. ###### 可以用来监控某个IP访问网站的频率，日志记录，访问资源的情况
+
+```java
+package com.felix.listener;
+
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletRequestEvent;
+import jakarta.servlet.ServletRequestListener;
+import jakarta.servlet.http.HttpServletRequest;
+
+/**
+ * @author 云禄
+ * @version 1.0
+ */
+
+public class FelixRequestListener implements ServletRequestListener {
+    @Override
+    public void requestInitialized(ServletRequestEvent sre) {
+        System.out.println("FelixRequestListener 监听到 request 对象创建");
+        ServletRequest servletRequest = sre.getServletRequest();
+
+        //记录访问日志
+        String remoteAddr = servletRequest.getRemoteAddr();
+        System.out.println("访问IP: " + remoteAddr);
+
+        StringBuffer requestURL = ((HttpServletRequest) servletRequest).getRequestURL();
+        System.out.println("访问资源: " + requestURL);
+    }
+
+    @Override
+    public void requestDestroyed(ServletRequestEvent sre) {
+        System.out.println("FelixRequestListener 监听到 request 对象创建");
+    }
+}
+```
+
+------
+
+
+
+## ServletRequestAttributeListener监听器
+
+1. ###### 作用：监听Request的属性变化
+
+2. ###### 相关方法：
+
+```java
+void attributeAdded（ServletRequestAttribute Event srae） 添加属性时
+void attributeReplaced（ServletRequestAttributeEvent srae） 替换属性时
+void attributeRemoved（ServletRequestAtributeEvent srae）移除属性时
+```
+
