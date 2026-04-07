@@ -1,0 +1,1608 @@
+## Spring重要概念
+
+1. ###### Spring 可以整合其他的框架(Spring 是管理框架的框架)
+
+2. ###### Spring 有两个核心的概念: IOC 和 AOP
+
+3. ###### IOC[Inversion Of Control反转控制]
+
+   - Spring 根据配置文件xml/注解，创建对象，并放入到容器(ConcurrentHashMap)中，并且可以完成对象之间的依赖。
+   - 当需要使用某个对象实例时，直接从容器获取即可。
+
+4. ###### DI-Dependency Injection 依赖注入，可以理解成是 IOC 的另外叫法。
+
+------
+
+## 快速入门
+
+#### 创建步骤
+
+###### 第1步：新建 Spring Boot 项目
+
+1. 打开 IDEA，点击 **New Project**
+2. 在左侧选择 **Spring Initializr**
+   - 如果没找到，在搜索框搜一下
+3. 填写项目信息：
+   - **Name**: `demo`
+   - **Location**: 随便选个文件夹
+   - **Language**: `Java`
+   - **Type**: `Maven`
+   - **Group**: `com.felix`
+   - **Artifact**: `demo`
+   - **JDK**: 选 JDK 17
+4. 点击 **Next**
+
+###### 第2步：添加依赖
+
+在依赖选择页面：
+
+- 搜索 `Spring Web` → 勾选 ✅
+- 点击 **Create**
+
+
+
+#### 准备一个 JavaBean
+
+```java
+package com.felix.springbootstudy.bean;
+
+/**
+ * @author 云禄
+ * @version 1.0
+ */
+
+public class Person {
+    private Integer id;
+    private String name;
+    private Integer age;
+
+    public Person(Integer id, String name, Integer age) {
+        this.id = id;
+        this.name = name;
+        this.age = age;
+    }
+
+  //无参构造器
+    public Person() {
+    }
+
+    public Integer getAge() {
+        return age;
+    }
+
+    public void setAge(Integer age) {
+        this.age = age;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public Integer getId() {
+        return id;
+    }
+
+    public void setId(Integer id) {
+        this.id = id;
+    }
+
+    @Override
+    public String toString() {
+        return "Person{" +
+                "id=" + id +
+                ", name='" + name + '\'' +
+                ", age=" + age +
+                '}';
+    }
+}
+```
+
+#### resource下创建beans.xml
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+        <!--
+                1.配置 Person 对象
+                2.在 beans 中可以配置多个 bean
+                3.一个 bean 代表一个 java 对象
+                4.class 用于指定类的全路径 -> Spring 底层使用反射创建
+                5.id 表示该 java 对象在 Spring 容器中的 id，通过该 id 可以获取到该对象
+                6.<property name="id" value="1"/> 用于给该对象的属性赋值
+        -->
+        <bean class="com.felix.springbootstudy.bean.Person" id="person1">
+                <property name="id" value="1"/>
+                <property name="name" value="Felix"/>
+                <property name="age" value="19"/>
+        </bean>
+</beans>
+```
+
+#### 测试文件
+
+```java
+package com.felix.springbootstudy.test;
+
+import com.felix.springbootstudy.bean.Person;
+import org.junit.jupiter.api.Test;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.support.ClassPathXmlApplicationContext;
+
+/**
+ * @author 云禄
+ * @version 1.0
+ */
+
+public class SpringBeanTest {
+    @Test
+    public void getPerson(){
+        //1.创建容器 ApplicationContext
+        //2.该容器与容器配置文件相关联
+        ApplicationContext applicationContext = new ClassPathXmlApplicationContext("beans.xml");
+
+        //3.通过 getBean 获取 id 对象的 java 对象
+        //默认返回的是 Object，运行类型依旧是 Person
+//        Object person01 = applicationContext.getBean("person1");
+//        System.out.println("person01运行类型: " + person01.getClass());
+        //输出：person01运行类型: class com.felix.springbootstudy.bean.Person
+
+        Person person1 = (Person) applicationContext.getBean("person1");
+        System.out.println("获取对应属性 name = " + person1.getName() + " age = " + person1.getAge());
+
+        //4.也可以在获取时直接指定Class类型
+        //同一个对象可以多次获取
+        Person person2 = applicationContext.getBean("person1", Person.class);
+    }
+}
+```
+
+------
+
+#### 注意事项和细节
+
+```java
+ApplicationContext applicationContext = new ClassPathXmlApplicationContext("beans.xml");
+```
+
+###### 为什么能读取到beans.xml
+
+得到类的加载路径
+
+```java
+@Test
+public void test(){
+    File f = new File(Objects.requireNonNull(this.getClass().getResource("/")).getPath());
+    // /Applications/video/manuscript/javaWebStudy/springBootStudy/target/classes
+    System.out.println(f);
+}
+```
+
+**查找路径：**
+
+1. 从**类路径根目录**（`target/classes/`）开始查找
+2. 因为 `beans.xml` 被复制到了根目录，所以能直接找到
+
+------
+
+## Spring容器结构剖析
+
+![截屏2026-04-05 20.37.18](assets/截屏2026-04-05 20.37.18.png)
+
+![截屏2026-04-05 20.39.18](assets/截屏2026-04-05 20.39.18.png)
+
+![截屏2026-04-05 20.43.32](assets/截屏2026-04-05 20.43.32.png)
+
+![截屏2026-04-05 20.44.46](assets/截屏2026-04-05 20.44.46.png)
+
+![截屏2026-04-05 20.48.04](assets/截屏2026-04-05 20.48.04.png)
+
+![截屏2026-04-05 20.50.03](assets/截屏2026-04-05 20.50.03.png)
+
+![截屏2026-04-05 20.51.56](assets/截屏2026-04-05 20.51.56.png)
+
+```java
+@Test
+public void getObject(){
+    ApplicationContext applicationContext = new ClassPathXmlApplicationContext("beans.xml");
+    //Spring 提供了一个 ArrayList 集合存储对象id
+    //getBeanDefinitionNames() 返回所有的对象id，返回字符串数组
+    //取决于 xml 文件中配置了多少个对象
+    String[] beanDefinitionNames = applicationContext.getBeanDefinitionNames();
+    for (String beanDefinitionName : beanDefinitionNames) {
+        System.out.println("beanDefinitionName = " + beanDefinitionName);
+    }
+}
+```
+
+------
+
+## 实现简单基于XML配置程序
+
+###### 写一个简单的Spring答器，通过读取beans.xml，获取第1个JavaBean:Monster的对象，并给该对象属性赋值，放入到容器中，输出该对象信息.
+
+![截屏2026-04-05 21.16.14](assets/截屏2026-04-05 21.16.14.png)
+
+```java
+package com.felix.springStudy.felixApplicationContext;
+
+import com.felix.springStudy.bean.Monster;
+import org.dom4j.Document;
+import org.dom4j.Element;
+import org.dom4j.io.SAXReader;
+
+import java.io.File;
+import java.lang.reflect.Constructor;
+import java.util.List;
+import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
+
+/**
+ * @author 云禄
+ * @version 1.0
+ * 用于实现 Spring 的一个简单容器机制
+ * 将 beans.xml 文件解析，并生成对象，放入容器中
+ * 提供方法返回对象 getBean(id)
+ */
+
+public class FelixApplicationContext {
+
+    private ConcurrentHashMap<String, Object> singletonObjects = new ConcurrentHashMap<>();
+
+    //构造器
+    //接收一个容器的配置文件,比如 beans.xml,该文件必须在 resource 下
+    public FelixApplicationContext(String iocBeanXmlFile) throws Exception {
+        //得到类加载路径
+        String path = Objects.requireNonNull(this.getClass().getResource("/")).getPath();
+        //创建 SAXReader
+        SAXReader saxReader = new SAXReader();
+        //得到 Document 对象
+        //类加载路径拼接配置文件，做到绝对路径
+        Document document = saxReader.read(new File(path + iocBeanXmlFile));
+        //得到根元素
+        Element rootElement = document.getRootElement();
+        //得到第一个 bean
+        Element bean = (Element) rootElement.elements("bean").get(0);
+        //得到第一个 bean 的相关属性
+        String beanId = bean.attributeValue("id");
+        String classFullPath = bean.attributeValue("class");
+
+        //获取所有属性
+        List<Element> elements = bean.elements("property");
+        ///直接获取
+        Integer id = Integer.parseInt(elements.get(0).attributeValue("value"));
+        String name = elements.get(1).attributeValue("value");
+        String skill = elements.get(2).attributeValue("value");
+
+        //使用反射创建对象
+        Class<?> aClass = Class.forName(classFullPath);
+        Constructor<?> constructor = aClass.getConstructor();
+        //这里的 o 已经是 Monster 类的，因为没有赋值，所以是默认的，也可以直接进行强转
+        //Object o = constructor.newInstance();
+        Monster o = (Monster) constructor.newInstance();
+        //这里应该使用反射机制来赋值
+        //为了简化，暂时使用硬编码
+        o.setId(id);
+        o.setName(name);
+        o.setSkill(skill);
+
+        //将创建好的对象放入到 singletonObjects 池中
+        singletonObjects.put(beanId , o);
+    }
+
+    //返回对象的方法
+    public Object getBean(String id){
+        Object o = singletonObjects.get(id);
+        if(o == null){
+            return null;
+        }
+        return o;
+    }
+}
+```
+
+![截屏2026-04-05 22.33.29](assets/截屏2026-04-05 22.33.29.png)
+
+## 问题
+
+#### 在 xml 中创建一个新的 bean ，如果不写id，会不会报错，如果不报错在哪里能找到id，并获得该对象
+
+1. ###### 不会报错，会正常运行。
+
+2. ###### 系统会默认分配id，规则是：全类名#0、全类名#1以此类推
+
+```java
+@Test
+public void get(){
+    ApplicationContext applicationContext = new ClassPathXmlApplicationContext("beans.xml");
+    Monster bean = applicationContext.getBean("com.felix.springStudy.bean.Monster#0", Monster.class);
+    System.out.println(bean);
+}
+```
+
+------
+
+## 通过类型来获得Bean
+
+```java
+public void getBeanByType(){
+    //通过 Bean 的类型获取对象
+    ApplicationContext applicationContext
+            = new ClassPathXmlApplicationContext("beans.xml");
+    //直接传入 class 对象
+    Monster bean = applicationContext.getBean(Monster.class);
+    System.out.println(bean);
+}
+```
+
+#### 细节说明
+
+1. ###### 按类型来获取bean，要求ioc容器中的同一个类的bean只能有一个,否则会抛出异常 NoUniqueBeanDefinitionException
+
+2. ###### 这种方式的应用场景：比如XxxAction/Servlet/Controller，或XxxService 在一个线程中只需要一个对象实例的情况
+
+3. ###### 在容器配置文件(如 beans.xml)中给属性赋值，底层是通过setter方法完成的，这也是为什么需要提供setter方法的原因。
+
+```xml
+<!--
+    1.当给某个bean对象设置属性时
+    2.Spring 使用反射机制，底层是使用对应的setter方法完成的，比如 setName()
+    3.如果没有这个方法就会报错
+-->
+<bean class="com.felix.springStudy.bean.Monster" id="monster1">
+    <property name="id" value="100"/>
+    <property name="name" value="牛魔王"/>
+    <property name="skill" value="芭蕉扇"/>
+</bean>
+```
+
+
+
+###### 当不写setter方法时
+
+1. <font color=red>BeanCreationException</font>
+2. <font color=red>Bean property 'name' is not writable or has an invalid setter method. Does the parameter type of the setter match the return type of the getter?</font>
+
+------
+
+## 通过构造器配置Bean
+
+```xml
+<!--创建Monster对象，并指定构造器完成初始化-->
+<bean class="com.felix.springStudy.bean.Monster" id="monster2">
+    <!--
+        1.constructor-arg 是按照构造器的方式去给对象赋值
+        2.value 指定索引处赋的值
+        3.index 是要给构造器的第几个索引处赋值，默认从 0 开始
+        4.index 可以省略（但建议写），也可以是用 name 属性指定属性名字去赋值
+        5.构造器必须有对应的参数列表
+        6.当构造器中存在别的对象实例时就必须使用 ref，当类型是 基本类型/String 时使用 value
+        7.如果参数类型不明确，可以加 type，一般没有歧义不加 Type
+    -->
+    <constructor-arg value="200" index="0" type="int"/>
+    <constructor-arg value="孙悟空" index="1"/>
+    <constructor-arg value="七十二变" index="2"/>
+</bean>
+```
+
+1. ###### constructor-arg 是按照构造器的方式去给对象赋值
+
+2. ###### value 指定索引处赋的值
+
+3. ###### index 是要给构造器的第几个索引处赋值，默认从 0 开始
+
+4. ###### index 可以省略（但建议写），也可以是用 name 属性指定属性名字去赋值
+
+5. ###### 构造器必须有对应的参数列表
+
+6. ###### 当构造器中存在别的对象实例时就必须使用 ref，当类型是 基本类型/String 时使用 value
+
+7. ###### 如果参数类型不明确，可以加 type，一般没有歧义不加 Type
+
+------
+
+## 通过p名称空间配置Bean
+
+```xml
+<!--通过p名称空间配置Bean-->
+<!--
+    1. 首先要使用 p 名称空间就需要先绑定
+    需要添加 xmlns:p="http://www.springframework.org/schema/p"
+    IDEA中会自动添加
+    2. p 名称空间只能用于 Setter 注入，不能用于构造器注入
+    3. p 名称空间不支持集合、Map、Properties 等复杂属性
+    4. 如果属性名以 -ref 结尾，会有冲突
+    5. 基本类型/String：直接用 p:属性名；引用其他 Bean：必须加 -ref 后缀
+    6. 属性较多时推荐使用传统 <property> 写法
+-->
+<bean class="com.felix.springStudy.bean.Person" id="person1"
+      p:id="100"
+      p:name="Felix"
+      p:age="19"
+/>
+```
+
+1. ###### 首先要使用 p 名称空间就需要先绑定，需要添加 xmlns:p="http://www.springframework.org/schema/p"，IDEA中会自动添加
+
+2. ###### p 名称空间只能用于 Setter 注入，不能用于构造器注入
+
+3. ###### p 名称空间不支持集合、Map、Properties 等复杂属性
+
+4. ###### 如果属性名以 -ref 结尾，会有冲突
+
+5. ###### 基本类型/String：直接用 p:属性名；引用其他 Bean：必须加 -ref 后缀
+
+6. ###### 属性较多时推荐使用传统\<property>写法
+
+------
+
+## 通过ref来配置Bean
+
+#### 准备资源
+
+```java
+public class MemberDAOImpl {
+
+    //构造器
+    public MemberDAOImpl() {
+        System.out.println("MemberDAOImpl 构造器被使用");
+    }
+
+    //方法
+    public void add(){
+        System.out.println("MemberDAOImpl 的 add() 被使用");
+    }
+}
+```
+
+```java
+public class MemberServiceImpl {
+    private MemberDAOImpl memberDAO;
+
+
+    public MemberDAOImpl getMemberDAO() {
+        return memberDAO;
+    }
+
+    public void setMemberDAO(MemberDAOImpl memberDAO) {
+        this.memberDAO = memberDAO;
+    }
+
+
+    public void add(){
+        System.out.println("MemberServiceImpl 的 add() 被使用");
+        memberDAO.add();
+    }
+}
+```
+
+#### 配置文件
+
+```xml
+<!--配置 MemberDAOImpl 对象-->
+<bean class="com.felix.springStudy.dao.MemberDAOImpl" id="memberDAOImpl1"/>
+
+<!--配置 MemberServiceImpl 对象-->
+<bean class="com.felix.springStudy.service.MemberServiceImpl" id="memberServiceImpl1">
+    <!--
+        ref="memberDA1" 表示 MemberServiceImpl 对象属性 memberDAO 引用的对象是 id = memberDAOImpl1 的对象
+        这里体现出了 Spring 容器的依赖注入
+        在 Spring 容器中，是作为一个整体来执行的，如果引用到一个 bean 对象，对配置的顺序没有要求
+    -->
+    <property name="memberDAO" ref="memberDAOImpl1"/>
+</bean>
+```
+
+#### Test
+
+```java
+@Test
+public void setBeanByRef(){
+    ApplicationContext applicationContext =
+            new ClassPathXmlApplicationContext("beans.xml");
+    MemberServiceImpl memberServiceImpl = applicationContext.getBean("memberServiceImpl1", MemberServiceImpl.class);
+    memberServiceImpl.add();
+    /*
+    MemberDAOImpl 构造器被使用
+    MemberServiceImpl 的 add() 被使用
+    MemberDAOImpl 的 add() 被使用 
+     */
+}
+```
+
+------
+
+## 使用内部Bean来配置属性
+
+```java
+<!--配置 MemberServiceImpl 对象 -> 使用内部bean-->
+<bean class="com.felix.springStudy.service.MemberServiceImpl" id="memberService2">
+    <!--自己配置一个内部bean-->
+    <property name="memberDAO">
+        <bean class="com.felix.springStudy.dao.MemberDAOImpl"/>
+    </property>
+</bean>
+```
+
+------
+
+## 对集合数组属性进行排序
+
+#### 准备资源
+
+```java
+/**
+ * @author 云禄
+ * @version 1.0
+ */
+
+public class Master {
+    private String name;//主人名
+
+    private List<Monster> monsterList;
+    private Map<String , Monster> monsterMap;
+    private Set<Monster> monsterSet;
+
+    private String[] monsterName;
+    //这个Properties 是 Hashtable 的子类，是 key-value 的形式
+    //这里Properties key 和 value 都是 String
+    private Properties pro;
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public List<Monster> getMonsterList() {
+        return monsterList;
+    }
+
+    public void setMonsterList(List<Monster> monsterList) {
+        this.monsterList = monsterList;
+    }
+
+    public Map<String, Monster> getMonsterMap() {
+        return monsterMap;
+    }
+
+    public void setMonsterMap(Map<String, Monster> monsterMap) {
+        this.monsterMap = monsterMap;
+    }
+
+    public Set<Monster> getMonsterSet() {
+        return monsterSet;
+    }
+
+    public void setMonsterSet(Set<Monster> monsterSet) {
+        this.monsterSet = monsterSet;
+    }
+
+    public String[] getMonsterName() {
+        return monsterName;
+    }
+
+    public void setMonsterName(String[] monsterName) {
+        this.monsterName = monsterName;
+    }
+
+    public Properties getPro() {
+        return pro;
+    }
+
+    public void setPro(Properties pro) {
+        this.pro = pro;
+    }
+
+    @Override
+    public String toString() {
+        return "Master{" +
+                "\nname='" + name + '\'' +
+                "\n, monsterList=" + monsterList +
+                "\n, monsterMap=" + monsterMap +
+                "\n, monsterSet=" + monsterSet +
+                "\n, monsterName=" + Arrays.toString(monsterName) +
+                "\n, pro=" + pro +
+                '}';
+    }
+}
+```
+
+#### 配置文件
+
+```xml
+<!--前面省略Bean对象-->
+<!--配置 Master 对象-->
+<bean class="com.felix.springStudy.bean.Master" id="master1">
+    <property name="name" value="太上老君"/>
+    <!--给List属性赋值-->
+    <property name="monsterList">
+        <list>
+            <ref bean="monster1"/>
+            <ref bean="monster2"/>
+            <bean class="com.felix.springStudy.bean.Monster">
+                <property name="id" value="300"/>
+                <property name="name" value="老鼠精"/>
+                <property name="skill" value="吃零食"/>
+            </bean>
+        </list>
+    </property>
+    <!--给Map属性赋值-->
+    <property name="monsterMap">
+        <map>
+            <entry>
+                <key>
+                    <value>master_01</value>
+                </key>
+                <ref bean="monster3"/>
+            </entry>
+            <entry>
+                <key>
+                    <value>master_02</value>
+                </key>
+                <ref bean="monster4"/>
+            </entry>
+        </map>
+    </property>
+    <!--给Set属性赋值-->
+    <property name="monsterSet">
+        <set>
+            <ref bean="monster1"/>
+            <ref bean="monster2"/>
+            <bean class="com.felix.springStudy.bean.Monster">
+                <property name="id" value="300"/>
+                <property name="name" value="老鼠精"/>
+                <property name="skill" value="吃零食"/>
+            </bean>
+        </set>
+    </property>
+    <!--给数组属性赋值-->
+    <property name="monsterName">
+        <array>
+            <value>monster_01</value>
+            <value>monster_02</value>
+            <value>monster_03</value>
+        </array>
+    </property>
+    <!-- 给 Properties 对象赋值  结构 k(String)-v(String) -->
+    <property name="pro">
+        <props>
+            <prop key="username">root</prop>
+            <prop key="password">wyl129103</prop>
+            <prop key="ip">127.0.0.1</prop>
+        </props>
+    </property>
+</bean>
+```
+
+------
+
+## 使用utillist进行配置
+
+```xml
+<!--这里定义构造一个 util:list , 并且指定 id-->
+<!--需要引入 xmlns:util="http://www.springframework.org/schema/util" 命名-->
+<!--这里放入共享数据-->
+<util:list id="bookList">
+    <value>三国演义</value>
+    <value>红楼梦</value>
+    <value>西游记</value>
+    <value>水浒传</value>
+</util:list>
+
+<!--配置BookStore-->
+<bean class="com.felix.springStudy.bean.BookStore" id="bookStore1">
+    <property name="bookList" ref="bookList">
+    </property>
+</bean>
+```
+
+------
+
+## 属性级联赋值配置
+
+###### Spring的ioc容器，可以直接给对象属性的对象赋值，即级联属性赋值
+
+```xml
+<!--配置Department对象-->
+<!--这里不给其 name 属性,等待Employee动态赋值-->
+<bean class="com.felix.springStudy.bean.Department" id="department1">
+</bean>
+<!--配置Employee对象-->
+<bean class="com.felix.springStudy.bean.Employee" id="employee1">
+    <property name="name" value="Felix"/>
+    <property name="department" ref="department1"/>
+    <!--这里希望给 department1 赋值[级联属性赋值]-->
+    <!--
+    1.这里写的name一定要是上面Department对象的name,即department
+    而不是id-department1
+    2.这里的 department.name 底层调用 Department 中的 setName 方法
+    将 value 的值赋给它
+    Spring 内部大致执行逻辑：
+    employee1.getDepartment().setName("java开发部门");
+    
+    -->
+    <property name="department.name" value="java开法部门"/>
+</bean>
+```
+
+#### 级联赋值的**前提条件**：
+
+```java
+public class Employee {
+    private Department department;  // 不能为 null
+    
+    // 必须提供 getter
+    public Department getDepartment() {
+        return department;
+    }
+}
+```
+
+------
+
+## 通过静态工厂获得Bean
+
+###### 在Spring的ioc容器，可以通过静态工厂获取Bean
+
+#### 静态工厂类
+
+```java
+package com.felix.springStudy.factory;
+
+import com.felix.springStudy.bean.Monster;
+
+import java.util.HashMap;
+import java.util.Map;
+
+/**
+ * @author 云禄
+ * @version 1.0
+ * 静态工厂
+ */
+
+//可以返回 Monster 对象
+public class MyStaticFactory {
+    private static Map<String , Monster> monsterMap;
+
+    //使用 static 代码块进行初始化
+    static {
+        monsterMap = new HashMap<>();
+        monsterMap.put("monster01" , new Monster(100 , "牛魔王" , "芭蕉扇"));
+        monsterMap.put("monster02" , new Monster(200 , "孙悟空" , "七十二变"));
+    }
+
+    //提供一个方法，返回 Monster 对象
+    public static Monster getMonster(String key){
+        return monsterMap.get(key);
+    }
+}
+```
+
+#### 配置文件
+
+```xml
+<!--配置 Monster 对象，通过静态工厂获取-->
+<!--
+1.通过静态工厂获取一个 Bean
+2.class 是静态工厂类的全路径
+3.factory-method 是指定静态工厂哪个方法返回对象
+4.<constructor-arg value="monster02"/> value 表示指定要返回静态工厂的哪个对象
+-->
+<bean id="my_monster01" class="com.felix.springStudy.factory.MyStaticFactory" factory-method="getMonster">
+    <constructor-arg value="monster02"/>
+</bean>
+```
+
+-  `factory-method` 指定的方法必须是 **static** 的
+-  `class` 指向的是**工厂类**，不是要创建的 Bean 类型
+-  如果工厂方法有参数，必须通过 `<constructor-arg>` 传递
+
+------
+
+## 通过实例工厂获得Bean
+
+###### 在Spring的ioc容器，可以通过实例工厂获取Bean
+
+#### 实例工厂类
+
+```java
+/**
+ * @author 云禄
+ * @version 1.0
+ * 实例工厂
+ */
+
+public class MyInstanceFactory {
+    private Map<String, Monster> monster_map;
+
+    //通过普通代码块进行初始化
+    {
+        monster_map = new HashMap<>();
+        monster_map.put("monster03", new Monster(100, "牛魔王_", "芭蕉扇_"));
+        monster_map.put("monster04", new Monster(200, "孙悟空_", "七十二变_"));
+    }
+
+    //返回Monster对象的方法
+    public Monster getMonster(String key){
+        return monster_map.get(key);
+    }
+}
+```
+
+#### 配置文件
+
+```xml
+<!--这里必须先配置一个实例工厂对象
+静态能够直接使用方法是因为静态方法不需要创建对象，而实例的不行-->
+<bean id="myInstanceFactory01" class="com.felix.springStudy.factory.MyInstanceFactory"/>
+<!--配置 Monster 对象，通过实例工厂-->
+<!--
+1.factory-bean 是指定使用哪个实例工厂来返回 bean
+2.factory-method 是指使用实例工厂哪个方法来返回 bean
+3.如果工厂方法有参数，必须通过 <constructor-arg> 传递
+4.如果有两个实例工厂获取同一个对象，但实际上两个并不是同一个对象
+5.静态工厂获取同一个对象，实际上就是同一个对象，因为是静态
+-->
+<bean id="my_monster02" factory-bean="myInstanceFactory01" factory-method="getMonster">
+    <constructor-arg value="monster03"/>
+</bean>
+```
+
+1. ###### 如果有两个实例工厂获取同一个对象，但实际上两个并不是同一个对象
+
+2. ###### 静态工厂获取同一个对象，实际上就是同一个对象，因为是静态
+
+------
+
+## 通过FactoryBean获取Bean[重点]
+
+###### 在Spring的ioc容器，可以通过 FactoryBean 获取 Bean
+
+#### FactoryBean类
+
+```java
+package com.felix.springStudy.factory;
+
+import com.felix.springStudy.bean.Monster;
+import org.jspecify.annotations.Nullable;
+import org.springframework.beans.factory.FactoryBean;
+
+import java.util.HashMap;
+import java.util.Map;
+
+/**
+ * @author 云禄
+ * @version 1.0
+ */
+
+public class MyFactoryBean implements FactoryBean<Monster> {
+
+    //这个是配置时，指定要获取的对象的对应的key
+    private String key;
+
+    private Map<String , Monster> monster_map;
+
+    //代码块初始化
+    {
+        monster_map = new HashMap<>();
+        monster_map.put("monster03", new Monster(100, "牛魔王_", "芭蕉扇_"));
+        monster_map.put("monster04", new Monster(200, "孙悟空_", "七十二变_"));
+    }
+
+    public void setKey(String key) {
+        this.key = key;
+    }
+
+    //指定要返回的 FactoryBean 中的对象
+    @Override
+    public @Nullable Monster getObject() throws Exception {
+        return monster_map.get(key);
+    }
+
+    //返回的类型
+    @Override
+    public @Nullable Class<?> getObjectType() {
+        return Monster.class;
+    }
+
+    //返回的对象是不是单例
+    @Override
+    public boolean isSingleton() {
+        return true;
+    }
+}
+```
+
+#### 配置文件
+
+```xml
+<!--配置 Monster 对象，通过 FactoryBean 获取-->
+<!--
+1.class 指定要使用的 FactoryBean
+2.key 表示 MyFactoryBean 中的属性 key
+3.value 就是要获取的对象的对象的 key
+-->
+<bean id="my_monster04" class="com.felix.springStudy.factory.MyFactoryBean">
+    <property name="key" value="monster04"/>
+</bean>
+```
+
+------
+
+## Bean配置信息重用
+
+###### 在Spring的ioc容器，提供了一种继承的方式来实现bean配置信息的重用
+
+```xml
+<!--配置Monster对象-->
+<bean class="com.felix.springStudy.bean.Monster" id="monster10">
+    <property name="id" value="10"/>
+    <property name="name" value="张三"/>
+    <property name="skill" value="技能"/>
+</bean>
+<!--
+配置Monster对象,但是属性要和 id="monster10" 的对象属性一样
+parent="monster10" 表示当前配置对象的属性值从 ID = monster10 的对象来
+-->
+<bean id="monster11" class="com.felix.springStudy.bean.Monster" parent="monster10"/>
+
+<!--
+如果 bean 指定了 abstract="true" 表示该 bean 是用于被继承的
+但是其本身的 Bean 就不能被获取(实例化)了
+继承方式就是让 bean 指定 parent 属性
+-->
+<bean class="com.felix.springStudy.bean.Monster" id="monster12" abstract="true">
+    <property name="id" value="100"/>
+    <property name="name" value="李四"/>
+    <property name="skill" value="技能"/>
+</bean>
+```
+
+------
+
+## Bean创建顺序
+
+#### 一、默认情况：单例 Bean 在容器启动时创建
+
+```java
+ApplicationContext applicationContext = new ClassPathXmlApplicationContext("beans.xml");
+// 此时所有单例 Bean 已经被创建
+```
+
+###### **特点**：
+
+- 默认**单例 Bean** 在容器**启动时**就被创建
+- 创建顺序 = **配置文件中定义的顺序**
+
+```xml
+<!-- beans.xml -->
+<bean id="monster1" class="..." />  <!-- 第1个创建 -->
+<bean id="monster2" class="..." />  <!-- 第2个创建 -->
+<bean id="monster3" class="..." />  <!-- 第3个创建 -->
+```
+
+#### 二、依赖关系影响顺序
+
+###### Spring 会**先创建依赖的对象**，再创建被依赖的对象。
+
+```xml
+<bean id="department" class="..." />      <!-- 第1个创建（被依赖） -->
+<bean id="employee" class="...">          <!-- 第2个创建 -->
+    <property name="department" ref="department"/>
+</bean>
+```
+
+即使 `employee` 配置在前面，Spring 也会先创建 `department`。
+
+```xml
+<bean id="student01" class="com.Felix.bean.Student" 
+      depends-on="department01"/>
+<bean id="department01" class="com.Felix.bean.Department" />
+```
+
+会先创建 department01 对象，再创建 student01 对象.
+
+#### 三、懒加载 Bean：使用时才创建
+
+```xml
+<!-- lazy-init="true"：延迟到第一次使用时才创建 -->
+<bean id="lazyBean" class="..." lazy-init="true"/>
+```
+
+```java
+// 容器启动时 lazyBean 不会被创建
+applicationContext.getBean("lazyBean");  // 此时才创建
+```
+
+#### 四、原型 Bean：每次获取时创建
+
+```xml
+<bean id="prototypeBean" class="..." scope="prototype"/>
+```
+
+```java
+// 每次调用 getBean() 都会创建新对象
+Object bean1 = context.getBean("prototypeBean");  // 创建
+Object bean2 = context.getBean("prototypeBean");  // 又创建
+// bean1 != bean2
+```
+
+------
+
+## Bean的单例和多实例
+
+1. 在Spring的ioc容器，默认时按照单例创建的，即配置一个bean对象后，ioc只会<font color=red>创建一个bean实例</font>。
+2. 如果希望ioc配置bean对象是以<font color=red>多个实例形式</font>创建的则可以通过配置 <font color=red>scope="prototype" </font>来指定。
+
+```xml
+<!--
+配置Cat对象
+1.默认情况下 scope="singleton" 即默认为单例模式
+当执行 getBean 方法时，返回的是同一个Bean对象
+2.如果希望每次返回一个新的Bean对象
+改写成 scope="prototype"
+-->
+
+<bean id="cat01" class="com.felix.springStudy.bean.Cat" scope="prototype">
+    <property name="id" value="100"/>
+    <property name="name" value="XiaoHuang"/>
+</bean>
+```
+
+#### 细节
+
+1. ###### 默认是单例 singleton ，在启动容器时，默认就会创建。
+
+2. ###### 当 scope="prototype" 设置为多实例机制后，该Bean是在getBean时才创建。
+
+3. ###### 如果是单例，同时还希望在getBean时才创建，可以使用懒加载 lazy-init="true"(这里默认是false)。
+
+4. ###### 通常情况下，lazy-init 就是用默认值 false，在开发看来，用于空间换时间是值得的。
+
+5. ###### 重点功能不加懒加载，非重点可以加懒加载，基本很少使用懒加载。
+
+|                            | 优点           | 缺点             |
+| :------------------------- | :------------- | :--------------- |
+| **空间换时间**（不懒加载） | 使用时速度快   | 启动慢，占用内存 |
+| **时间换空间**（懒加载）   | 启动快，省内存 | 首次使用时慢     |
+
+------
+
+## Bean的生命周期
+
+#### Bean对象创建是由JVM完成的，然后执行如下方法：
+
+1. ###### 执行构造器
+
+2. ###### 执行set相关的方法
+
+3. ###### 调用Bean的初始化的方法(需要配置)
+
+4. ###### 使用Bean
+
+5. ###### 当容器关闭时，调用Bean的销毁方法(需要配置)
+
+#### 代码验证
+
+###### House类
+
+```java
+package com.felix.springStudy.bean;
+
+/**
+ * @author 云禄
+ * @version 1.0
+ */
+
+public class House {
+    private String name;
+
+    public House() {
+        System.out.println("House 构造器被调用");
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        System.out.println("House setName() = " + name);
+        this.name = name;
+    }
+
+    //这两个方法是自主编写的
+    //根据所需的业务逻辑来写
+    public void init(){
+        System.out.println("House init()被调用");
+    }
+    public void destroy(){
+        System.out.println("House destroy()被调用");
+    }
+}
+```
+
+###### 配置文件
+
+```xml
+<!--配置House对象，演示整个Bean的生命周期-->
+<!--
+1.init-method 指定 Bean 的初始化方法，在 setter 之后执行
+2.destroy-method 指定 Bean 的销毁方法，在容器关闭的时候执行
+两个方法执行的时机由 Spring 来控制
+-->
+<bean class="com.felix.springStudy.bean.House" id="house1"
+      init-method="init" destroy-method="destroy">
+    <property name="name" value="house_one"/>
+</bean>
+```
+
+###### 测试
+
+```java
+//测试Bean的生命周期
+@Test
+public void getBeanLifeCycle(){
+    ApplicationContext applicationContext =
+            new ClassPathXmlApplicationContext("beans.xml");
+    House house1 = applicationContext.getBean("house1", House.class);
+    System.out.println(house1);
+    //关闭容器
+    //1.applicationContext 的编译类型是 ApplicationContext，运行类型是 ClassPathXmlApplicationContext
+    //2.因为 ClassPathXmlApplicationContext 实现了 ConfigurableApplicationContext 接口类
+    //  这里 ConfigurableApplicationContext 是 applicationContext 的子接口。
+    //3.applicationContext 是没有 close 方法的，而 ConfigurableApplicationContext 是有 close 方法的
+    //4.所以要将 applicationContext 转成 ClassPathXmLAppLicationContext，再调用 close
+    ClassPathXmlApplicationContext classPathXmlApplicationContext =
+            (ClassPathXmlApplicationContext) applicationContext;
+    /*
+    ApplicationContext (接口)
+        ↑
+    ConfigurableApplicationContext (子接口)  ← 有 close() 方法
+        ↑
+    ClassPathXmlApplicationContext (实现类)
+     */
+    classPathXmlApplicationContext.close();
+
+    /*
+    输出:
+    House 构造器被调用
+    House setName() = house_one
+    House init()被调用
+    com.felix.springStudy.bean.House@7ee55e70
+    House destroy()被调用
+     */
+}
+```
+
+### 三种关闭容器的方式
+
+```java
+ApplicationContext context = new ClassPathXmlApplicationContext("beans.xml");
+
+// 方式1：向下转型
+ClassPathXmlApplicationContext ctx1 = (ClassPathXmlApplicationContext) context;
+ctx1.close();
+
+// 方式2：直接使用子接口接收
+ConfigurableApplicationContext ctx2 = new ClassPathXmlApplicationContext("beans.xml");
+ctx2.close();
+
+// 方式3：强制转换（一行搞定）
+((ClassPathXmlApplicationContext) context).close();
+```
+
+#### 为什么 ApplicationContext 没有 close()？
+
+```java
+public interface ApplicationContext {
+    // 只有基础方法：getBean(), getBeanDefinitionNames() 等
+    // 没有 close()
+}
+
+public interface ConfigurableApplicationContext extends ApplicationContext {
+    void close();        // 关闭容器
+    void refresh();      // 刷新容器
+    // ... 其他配置方法
+}
+```
+
+
+
+**设计原因**：
+
+- `ApplicationContext` 是**只读接口**，提供给业务代码使用
+- `ConfigurableApplicationContext` 是**可配置接口**，提供给管理代码使用
+- 符合**接口隔离原则**
+
+------
+
+## 配置Bean后置处理器
+
+#### 说明
+
+1. ###### 在Spring的ioc容器，可以配置Bean的后置处理器。
+
+2. ###### 该处理器/对象会在Bean初始化方法调用前和初始化调用后被调用。
+
+3. ###### 可以在后置处理器中编写自己的代码。
+
+#### 代码实现
+
+###### 后置处理器类
+
+```java
+package com.felix.springStudy.bean;
+
+import org.jspecify.annotations.Nullable;
+import org.springframework.beans.BeansException;
+import org.springframework.beans.factory.config.BeanPostProcessor;
+
+/**
+ * @author 云禄
+ * @version 1.0
+ * 后置处理器
+ */
+
+//要成为后置处理器，必须实现 BeanPostProcessor
+public class MyBeanPostProcessor implements BeanPostProcessor {
+    /**
+     * 在完成 Bean 初始化之前被调用，即 init() 之前
+     * @param bean     传入的在 IOC 容器中创建/配置的 Bean
+     * @param beanName 传入的在 IOC 容器中创建/配置的 Bean 的 id
+     * @return 对传入的 Bean 进行修改/处理(如果有需要的话)，返回
+     * @throws BeansException
+     */
+    @Override
+    public @Nullable Object postProcessBeforeInitialization(Object bean, String beanName) throws BeansException {
+        System.out.println("postProcessBeforeInitialization 被执行 bean = " + bean + " beanName = " + beanName);
+        return bean;
+    }
+
+    /**
+     * 在完成 Bean 初始化之后被调用，即 init() 之后
+     * @param bean     传入的在 IOC 容器中创建/配置的 Bean
+     * @param beanName 传入的在 IOC 容器中创建/配置的 Bean 的 id
+     * @return 对传入的 Bean 进行修改/处理(如果有需要的话)，返回
+     * @throws BeansException
+     */
+    @Override
+    public @Nullable Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {
+        System.out.println("postProcessAfterInitialization 被执行 bean = " + bean + " beanName = " + beanName);
+        return bean;
+    }
+}
+```
+
+###### 配置文件
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+    <!--配置 House 对象-->
+    <bean class="com.felix.springStudy.bean.House" id="house02"
+          init-method="init" destroy-method="destroy">
+        <property name="name" value="house1"/>
+    </bean>
+    <!--
+    配置后置处理器对象
+    1.当在 beans02.xml 容器配置文件中 配置了 后置处理器(myBeanPostProcessor)后
+    2.这时后置处理器对象，就会作用在该容器创建的Bean对象
+    -->
+
+    <bean class="com.felix.springStudy.bean.MyBeanPostProcessor" id="myBeanPostProcessor"/>
+</beans>
+```
+
+#### 测试
+
+```java
+@Test
+public void beanPostProcessor(){
+    ApplicationContext applicationContext =
+            new ClassPathXmlApplicationContext("beans02.xml");
+    House house02 = applicationContext.getBean("house02", House.class);
+    System.out.println(house02);
+    ((ClassPathXmlApplicationContext)applicationContext).close();
+    /*
+    输出：
+    House 构造器被调用
+    House setName() = house1
+    postProcessBeforeInitialization 被执行 bean = com.felix.springStudy.bean.House@42a9a63e beanName = house02
+    House init()被调用
+    postProcessAfterInitialization 被执行 bean = com.felix.springStudy.bean.House@42a9a63e beanName = house02
+    com.felix.springStudy.bean.House@42a9a63e
+    House destroy()被调用
+     */
+}
+```
+
+#### 说明
+
+###### 怎么执行到 postProcessBeforeInitialization 和 postProcessAfterInitialization这两个方法的？
+
+***底层使用 AOP(反射+动态代理+IO+容器+注解)。***
+
+###### 作用：
+
+***可以对 IOC 容器中所有的对象进行统一管理，比如 日志管理/权限的校验/安全的验证/事务管理等。***
+
+###### 针对容器的所有对象 --> 切面编程特点
+
+------
+
+## 通过属性文件配置Bean
+
+#### 代码实现
+
+###### 在 resources 目录下创建 my.properties
+
+```properties
+id=1000
+name=Jack
+skill=Hello
+```
+
+###### 配置文件
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd http://www.springframework.org/schema/context https://www.springframework.org/schema/context/spring-context.xsd">
+    <!--指定属性文件
+    location="classpath:my.properties" 表示指定属性文件的位置
+    需要添加 classpath ，否则找不到文件
+    -->
+    <context:property-placeholder location="classpath:my.properties"/>
+    <!--配置 Monster 对象
+    1.通过属性文件给 monster 的对象属性赋值
+    2.这时属性值通过 ${属性名}
+    3.这里的 属性名 就是 my.properties 中的 k=v 中的 k
+    4.如果文件中有中文，需要将其转成 unicode 编码再填进文件中 -> 使用工具进行 unicode 转码
+    -->
+    <bean class="com.felix.springStudy.bean.Monster" id="monster1000">
+        <property name="id" value="${id}"/>
+        <property name="name" value="${name}"/>
+        <property name="skill" value="${skill}"/>
+    </bean>
+
+</beans>
+```
+
+------
+
+## 基于XML的Bean的自动分配
+
+#### 代码实现
+
+###### OrderDAO类
+
+```java
+package com.felix.springStudy.dao;
+
+/**
+ * @author 云禄
+ * @version 1.0
+ */
+
+public class OrderDAO {
+    public void saveOrder(){
+        System.out.println("保存一个订单...");
+    }
+}
+```
+
+###### OrderService类
+
+```java
+package com.felix.springStudy.service;
+
+import com.felix.springStudy.dao.OrderDAO;
+
+/**
+ * @author 云禄
+ * @version 1.0
+ */
+
+public class OrderService {
+    private OrderDAO orderDAO;
+
+    public OrderDAO getOrderDAO() {
+        return orderDAO;
+    }
+
+    public void setOrderDAO(OrderDAO orderDAO) {
+        this.orderDAO = orderDAO;
+    }
+}
+```
+
+###### OrderAction类
+
+```java
+package com.felix.springStudy.action;
+
+import com.felix.springStudy.service.OrderService;
+
+/**
+ * @author 云禄
+ * @version 1.0
+ */
+
+public class OrderAction {
+    private OrderService orderService;
+
+    public OrderService getOrderService() {
+        return orderService;
+    }
+
+    public void setOrderService(OrderService orderService) {
+        this.orderService = orderService;
+    }
+}
+```
+
+###### xml配置文件
+
+```xml
+<!--配置 OrderDAO 对象-->
+<bean class="com.felix.springStudy.dao.OrderDAO" id="orderDAO"/>
+<!--配置 OrderService 对象
+1.autowire 表示 自动装配
+2.autowire="byType" 表示 在创建 orderService 时
+通过类型的方式 给对象属性 完成自动赋值/引用
+比如 OrderService 中有 private OrderDAO orderDAO;
+就会在容器中去找有没有 OrderDAO 类型对象
+如果有，就自动装配，不能出现多个
+如果没有就不能自动装配
+3.autowire="byName" 表示通过名字完成自动装配
+比如 autowire="byName" class="com.felix.springStudy.service.OrderService" id="orderService"
+    1.Spring 容器会先看 private OrderDAO orderDAO;
+    2.再根据这个属性的 setXxx 方法的 xxx 来找对象 id
+    3.public void setOrderDAO 就会找 id = orderDAO 对象来进行自动装配
+    如果是 setOrderDAOXXX 就会找 id = orderDAOXXX 对象来进行装配
+    4.如果没有就装配失败
+-->
+<bean autowire="byName" class="com.felix.springStudy.service.OrderService" id="orderService"/>
+<!--配置 OrderAction 对象-->
+<bean autowire="byName" class="com.felix.springStudy.action.OrderAction" id="orderAction"/>
+```
+
+#### byType 详解
+
+```xml
+<bean id="orderService" class="com.felix.springStudy.service.OrderService" autowire="byType"/>
+```
+
+**执行过程**：
+
+```
+OrderService 中有 private OrderDAO orderDAO;
+         ↓
+Spring 在容器中查找 OrderDAO 类型的 Bean
+         ↓
+找到 → 自动注入
+没找到 → 不注入（属性为 null）
+找到多个 → 抛出异常（NoUniqueBeanDefinitionException）
+```
+
+#### byName 详解
+
+```xml
+<bean id="orderService" class="com.felix.springStudy.service.OrderService" autowire="byName"/>
+```
+
+**执行过程**：
+
+```
+1. OrderService 中有 private OrderDAO orderDAO;
+2. 对应的 setter 方法是 setOrderDAO()
+3. Spring 提取 "OrderDAO" → 转换为首字母小写 "orderDAO"
+4. 查找 id="orderDAO" 的 Bean
+5. 找到 → 自动注入；没找到 → 不注入
+```
+
+**命名对应规则**
+
+```java
+private OrderDAO orderDAO;     // setOrderDAO() → 找 id="orderDAO"
+private OrderDAO orderDAO123;  // setOrderDAO123() → 找 id="orderDAO123"
+private OrderDAO abc;          // setAbc() → 找 id="abc"
+```
+
+#### 自动装配的缺点
+
+| 缺点         | 说明                               |
+| :----------- | :--------------------------------- |
+| **不够明确** | 依赖关系不清晰                     |
+| **配置限制** | 不能装配简单类型（int、String 等） |
+| **灵活性差** | byType 有唯一性限制                |
+
+------
+
+## Spring El 表达式配置
+
+#### 基本介绍
+
+1. ###### Spring Expression Language，Spring 的表达式语言，简称 SpEL，支持运行时查询并可以操作对象。
+
+2. ###### 和 EL 表达式一样，SpEl 根据 JavaBean 风格的 getXxx(),setXxx()方法定义的属性访问对象。
+
+3. ###### SpEL 使用 #{...} 作为定界符，所有在大括号中的字符都将被认为是 SpEl 表达式。
+
+#### 代码实现
+
+###### bean
+
+```java
+package com.felix.springStudy.bean;
+
+/**
+ * @author 云禄
+ * @version 1.0
+ */
+
+public class SpELBean {
+    private String name;
+    private Monster monster;
+    private String monsterName;
+    private String crySound;
+    private String bookName;
+    private Double result;
+
+    //会返回一个字符串
+    public String cry(String sound){
+        return "发出: " + sound;
+    }
+
+    //静态方法，返回字符串
+    public static String read(String bookName){
+        return "正在看: " + bookName;
+    }
+
+   //getter,setter 方法...
+}
+```
+
+###### xml
+
+```xml
+<!--配置Monster对象-->
+<bean class="com.felix.springStudy.bean.Monster" id="monster10">
+    <property name="id" value="10"/>
+    <property name="name" value="张三"/>
+    <property name="skill" value="技能"/>
+</bean>
+<bean id="monster11" class="com.felix.springStudy.bean.Monster" parent="monster10"/>
+
+<!--Spring El 表达式的使用
+通过 SpEL 给 Bean 的属性赋值
+-->
+<bean class="com.felix.springStudy.bean.SpELBean" id="spELBean">
+    <!--sp el 给字面量-->
+    <property name="name" value="#{'Felix'}"/>
+    <!--sp el 引用其他 Bean-->
+    <property name="monster" ref="#{monster10}"/>
+    <!--sp el 引用其他 Bean 的属性-->
+    <property name="monsterName" value="#{monster11.name}"/>
+    <!--sp el 调用普通方法()返回值，并将返回值赋给 name="crySound"-->
+    <property name="crySound" value="#{spELBean.cry('狗叫...')}"/>
+    <!--sp el 使用静态方法-->
+    <property name="bookName" value="#{T(com.felix.springStudy.bean.SpELBean).read('假如给我三天光明')}"/>
+    <!--sp el 使用运算赋值-->
+    <property name="result" value="#{8.8*9.9}"/>
+</bean>
+```
+
